@@ -1,0 +1,26 @@
+module Interface.Sprites where
+
+import Codec.Picture
+import Graphics.Gloss
+import Graphics.Gloss.Juicy
+import Data.Maybe (fromJust)
+
+data Sprite = Sprite [Frame] Float Float
+type Frame = Picture
+type Rect = (Int, Int, Int, Int) -- x y w h
+
+-- | Representa toda a informação necessária para criar um 'Sprite'
+type SpriteData = ( Float  -- ^ A duração de uma frame
+                  , [Rect] -- ^ O 'Rect' que envolve todas as frames
+                  )
+
+getSprite :: DynamicImage -> Sprite -> DynamicImage
+getSprite img (Sprite l t i) = undefined
+
+-- | Gera um 'Sprite' a partir de uma 'DynamicImage' e de um 'SpriteData'
+makeSprite :: DynamicImage -> SpriteData -> Sprite
+makeSprite p (f, l) = Sprite (fromJust <$> fromDynamicImage <$> crop p <$> l) f 0
+
+-- | Recorta uma DynamicImage
+crop :: DynamicImage -> Rect -> DynamicImage
+crop img (x,y,w,h) = dynamicPixelMap (\i -> generateImage (\x' y' -> pixelAt i (x' + x) (y' + x)) w h) img

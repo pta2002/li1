@@ -1,0 +1,40 @@
+module Interface.Mapa where
+
+import Graphics.Gloss
+import Data.Map (Map, (!))
+import qualified Data.Map as M
+import LI11920
+
+-- TODO isto tem de ficar em algum tipo de cache
+pecaPicture :: Peca -> IO Picture
+pecaPicture (Recta p _) = pisoPicture p
+
+pisoPicture :: Piso -> IO Picture
+pisoPicture Terra = loadBMP "res/terra.bmp"
+pisoPicture Relva = loadBMP "res/relva.bmp"
+pisoPicture Boost = loadBMP "res/boost.bmp"
+pisoPicture Lama = loadBMP "res/lama.bmp"
+pisoPicture Cola = loadBMP "res/cola.bmp"
+
+data EstadoM = EstadoM { pecas :: Map Piso Picture -- ^ Guardar as imagens para nao estar a carregar sempre do disco
+                       }
+
+-- !!!!! Para poder meter isto num Map, é preciso que Piso seja Ord, por isso adicionei essa classe
+-- !!!!! mas não sei se posso fazer isso.
+loadPics :: IO (Map Piso Picture)
+loadPics = sequence $ M.insert Terra (pisoPicture Terra) $
+                      M.insert Relva (pisoPicture Terra) $
+                      M.insert Boost (pisoPicture Terra) $
+                      M.insert Cola (pisoPicture Terra) $
+                      M.insert Lama (pisoPicture Terra) M.empty
+
+estadoMInicial pics = EstadoM pics
+
+fps :: Int
+fps = 60
+
+main :: IO ()
+main = do
+    p <- loadPics
+    let estado = estadoMInicial p
+    display (InWindow "Mapa" (800, 600) (10, 10)) cyan $ (pecas estado) ! Terra

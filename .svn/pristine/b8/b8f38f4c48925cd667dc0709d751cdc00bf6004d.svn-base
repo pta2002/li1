@@ -1,0 +1,48 @@
+module Interface.Mapa where
+
+import Graphics.Gloss
+import Data.Map (Map, (!))
+import qualified Data.Map as M
+import LI11920
+import Tarefa1_2019li1g181
+import Tarefa0_2019li1g181
+import Interface.ThreeD
+import Interface.View
+import Data.Either (fromRight)
+import Data.Maybe (fromJust)
+import Graphics.Gloss.Interface.IO.Game
+import Graphics.Gloss.Juicy
+import Codec.Picture
+
+-- Pos x
+data EstadoM = EstadoM { mapaJogo :: Mapa
+                       , jogadoresJogo :: [Jogador]
+                       , cameraX :: Float
+                       , objetoMapa :: Objeto
+                       , sprites :: Picture
+                       }
+
+-- TODO usar eventos para alterar X
+
+mapa :: Mapa -> [Jogador] -> IO (View EstadoM)
+mapa m js = do
+    spritesheet <- convertRGBA8 <$> fromRight undefined <$> readImage "res/sprites.png"
+
+    -- TODO cortar a imagem, implementar a spritesheet e modificar os valores para cor de jogador
+
+    return $ View update
+                  event
+                  draw
+                  (EstadoM m js 0 (mapaToObjeto m) $ fromImageRGBA8 spritesheet)
+
+update :: Float -> EstadoM -> EstadoM
+update t e@EstadoM{ cameraX = x } = e{ cameraX = x - 1 * t}
+
+event :: Event -> EstadoM -> EstadoM
+event _ = id
+
+draw :: EstadoM -> Picture
+draw EstadoM { objetoMapa = o, cameraX = x, sprites = s } = scale 64 64 $ pictures [drawObjeto (x, -5, 0) o, scale (1/24) (1/24) s]
+
+inserirJogadores :: EstadoM -> Objeto
+inserirJogadores EstadoM{objetoMapa = o, jogadoresJogo = j} = undefined

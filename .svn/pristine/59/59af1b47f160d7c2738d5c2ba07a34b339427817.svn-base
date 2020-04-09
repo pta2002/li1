@@ -1,0 +1,24 @@
+-- | Este módulo define funções comuns da Tarefa 5 do trabalho prático.
+module Main where
+
+import LI11920
+import Graphics.Gloss
+import Graphics.Gloss.Interface.Pure.Game
+
+import Interface.Mapa
+import Tarefa1_2019li1g181
+import Interface.View
+
+type Estado = (Float, Float)
+
+fps :: Int
+fps = 60
+
+dm :: Display
+dm = InWindow "ExciteBike" (800, 600) (0, 0) --FullScreen
+
+-- | Função principal da Tarefa 5.
+--
+-- __NB:__ Esta Tarefa é completamente livre. Deve utilizar a biblioteca <http://hackage.haskell.org/package/gloss gloss> para animar o jogo, e reutilizar __de forma completa__ as funções das tarefas anteriores.
+main :: IO ()
+main = mapa (gera 5 100 1) [Jogador 3 0 1 1 $ Chao True, Jogador 2 0 1 1 $ Chao True] >>= runView dm (greyN 0.5) 60

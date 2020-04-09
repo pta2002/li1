@@ -1,0 +1,203 @@
+-- | Este módulo define funções comuns da Tarefa 2 do trabalho prático.
+{-
+Module      : Tarefa2_2019li1g181
+Description : Módulo Haskell que contem a função principal (jogada) da Tarefa 2
+
+-}
+module Tarefa2_2019li1g181 where
+
+import LI11920
+import Tarefa0_2019li1g181
+import Tarefa1_2019li1g181
+import Data.Fixed (mod')
+
+-- | Objetos pré-definidos para testes
+jogadorInicial = Jogador 0 0 1 1 (Chao False)
+mapaInicial =
+  [ [Recta Terra 0, Recta Terra 0, Rampa Terra 0 2, Recta Boost 2, Recta Boost 2, Recta Terra 2]
+  , [Recta Terra 0, Recta Terra 0, Recta Terra 0, Recta Terra 0, Recta Terra 0, Recta Terra 0]
+  , [Recta Terra 0, Recta Terra 0, Rampa Terra 0 2, Recta Boost 2, Recta Boost 2, Recta Terra 2]
+  , [Recta Terra 0, Recta Terra 0, Rampa Terra 0 2, Recta Boost 2, Recta Boost 2, Recta Terra 2]
+  ] 
+
+-- * Testes
+
+-- | Testes unitários da Tarefa 2.
+--
+-- Cada teste é um triplo (/identificador do 'Jogador'/,/'Jogada' a efetuar/,/'Estado' anterior/).
+testesT2 :: [(Int,Jogada,Estado)]
+testesT2 =
+    -- Movimento Direita/Esquerda
+    [ (0, Movimenta E, Estado mapaInicial [jogadorInicial{estadoJogador=Ar 0 0 0}])
+    , (0, Movimenta D, Estado mapaInicial [jogadorInicial{estadoJogador=Ar 0 0 0}])
+    , (0, Movimenta E, Estado mapaInicial [jogadorInicial{estadoJogador=Ar 0 90 0}])
+    , (0, Movimenta D, Estado mapaInicial [jogadorInicial{estadoJogador=Ar 0 (-90) 0}])
+    , (0, Movimenta E, Estado mapaInicial [jogadorInicial])
+    , (0, Movimenta D, Estado mapaInicial [jogadorInicial])
+    , (0, Movimenta D, Estado mapaInicial [jogadorInicial{estadoJogador=Morto 1}])
+    -- Movimento Cima/Baixo
+    , (0, Movimenta C, Estado mapaInicial [jogadorInicial])
+    , (0, Movimenta C, Estado mapaInicial [jogadorInicial{estadoJogador=Morto 1}])
+    , (0, Movimenta C, Estado mapaInicial [jogadorInicial{estadoJogador=Ar 2 0 0}])
+    , (0, Movimenta B, Estado mapaInicial [jogadorInicial])
+    , (0, Movimenta B, Estado mapaInicial [jogadorInicial{estadoJogador=Morto 1}])
+    , (0, Movimenta B, Estado mapaInicial [jogadorInicial{estadoJogador=Ar 2 0 0}])
+    , (0, Movimenta C, Estado mapaInicial [jogadorInicial{pistaJogador=3}])
+    , (0, Movimenta B, Estado mapaInicial [jogadorInicial{pistaJogador=3}])
+    , (0, Movimenta C, Estado mapaInicial [jogadorInicial{pistaJogador=1, distanciaJogador=2.5}])
+    , (0, Movimenta C, Estado mapaInicial [jogadorInicial{pistaJogador=1, distanciaJogador=2}])
+    , (0, Movimenta B, Estado mapaInicial [jogadorInicial{pistaJogador=0, distanciaJogador=2.5}])
+    , (0, Movimenta B, Estado mapaInicial [jogadorInicial{pistaJogador=0, distanciaJogador=2}])
+    , (0, Movimenta C, Estado mapaInicial [jogadorInicial{pistaJogador=2, distanciaJogador=2.5}])
+    , (0, Movimenta C, Estado mapaInicial [jogadorInicial{pistaJogador=2, distanciaJogador=2}])
+    , (0, Movimenta B, Estado mapaInicial [jogadorInicial{pistaJogador=2, distanciaJogador=2}])
+    , (0, Movimenta B, Estado mapaInicial [jogadorInicial{pistaJogador=2, distanciaJogador=2.5}])
+    , (0, Movimenta C, Estado mapaInicial [jogadorInicial{pistaJogador=3, distanciaJogador=2.5}])
+    , (0, Movimenta C, Estado mapaInicial [jogadorInicial{pistaJogador=3, distanciaJogador=2}])
+    -- Disparar
+    , (0, Dispara, Estado mapaInicial [jogadorInicial{distanciaJogador = 0}])
+    , (0, Dispara, Estado mapaInicial [jogadorInicial{distanciaJogador = 2, colaJogador = 0}])
+    , (0, Dispara, Estado mapaInicial [jogadorInicial{distanciaJogador = 2, colaJogador = 3}])
+    , (0, Dispara, Estado mapaInicial [jogadorInicial{distanciaJogador = 5}])
+    , (0, Dispara, Estado mapaInicial [jogadorInicial{distanciaJogador = 1}])
+    , (0, Dispara, Estado mapaInicial [jogadorInicial{distanciaJogador = 3}])
+    , (0, Dispara, Estado mapaInicial [jogadorInicial{pistaJogador = 1, distanciaJogador = 2}])
+    , (0, Dispara, Estado mapaInicial [jogadorInicial{distanciaJogador = 2, estadoJogador = Ar 2 0 0}])
+    , (0, Dispara, Estado mapaInicial [jogadorInicial{distanciaJogador = 2, estadoJogador = Morto 5}])
+    -- Acelera/Desacelera
+    , (0, Acelera, Estado mapaInicial [jogadorInicial])
+    , (0, Desacelera, Estado mapaInicial [jogadorInicial])
+    , (0, Desacelera, Estado mapaInicial [jogadorInicial{estadoJogador = Ar 2 0 0}])
+    , (0, Acelera, Estado mapaInicial [jogadorInicial{estadoJogador = Ar 2 0 0}])
+    , (0, Acelera, Estado mapaInicial [jogadorInicial{estadoJogador = Morto 2}])
+    , (0, Desacelera, Estado mapaInicial [jogadorInicial{estadoJogador = Morto 2}])
+    ]
+
+-- * Funções principais da Tarefa 2.
+
+-- | Efetua uma jogada.
+jogada :: Int    -- ^ O identificador do 'Jogador' que efetua a jogada.
+       -> Jogada -- ^ A 'Jogada' a efetuar.
+       -> Estado -- ^ O 'Estado' anterior.
+       -> Estado -- ^ O 'Estado' resultante após o jogador efetuar a jogada.
+jogada idJogador acao estado 
+    | not morto = case acao of
+        Movimenta dir -> atualizaJogador idJogador (movimenta jogador mapa dir) estado
+        Acelera       -> atualizaJogador idJogador (acelOuDesacel 1 jogador) estado
+        Desacelera    -> atualizaJogador idJogador (acelOuDesacel (-1) jogador) estado
+        Dispara       -> atualizaJogador idJogador jog estado {mapaEstado = map}
+    | otherwise = estado
+  where
+    jogadores = jogadoresEstado estado  -- A lista de todos os jogadores
+    jogador = jogadores !! idJogador    -- O jogador que efetua a jogada
+    mapa = mapaEstado estado
+    (jog,map) = dispara jogador mapa
+    morto = estaMorto jogador
+
+-- | Determina se um jogador se encontra morto
+estaMorto :: Jogador -> Bool
+estaMorto (Jogador{estadoJogador=Morto{}}) = True
+estaMorto _ = False
+
+atualizaJogador :: Int -> Jogador -> Estado -> Estado
+atualizaJogador idJogador jogador estado = estado { jogadoresEstado = nJogadores }
+  where
+    jogadores = jogadoresEstado estado
+    nJogadores = atualizaIndiceLista idJogador jogador jogadores
+
+-- | Executa a jogada Movimenta num jogador
+movimenta :: Jogador -> Mapa -> Direcao -> Jogador
+movimenta jogador mapa dir
+    | dir == C || dir == B = mudaPista jogador mapa dir
+    | dir == D || dir == E = inclina jogador dir
+
+-- | Muda um jogador de pista
+mudaPista :: Jogador -> Mapa -> Direcao -> Jogador
+mudaPista j@Jogador{distanciaJogador = dist, pistaJogador=pista, estadoJogador=Chao{}} mapa dir
+    | pista + dif < 0 || pista + dif >= length mapa = j
+    | abs diferencaAlturas <= 0.2 = j{pistaJogador=pista + dif}
+    | diferencaAlturas > 0.2 = j{estadoJogador=Morto{ timeoutJogador=1.0 }, velocidadeJogador=0}
+    | otherwise = j{pistaJogador=pista + dif, estadoJogador=Ar alturaAtual inclinacaoAtual 0}
+  where
+    pistaAtual = mapa !! pista
+    pistaAlvo = mapa !! (pista + dif)
+    pecaAtual = pistaAtual !! truncate dist 
+    pecaAlvo = pistaAlvo !! truncate dist
+    dif = if dir == C then (-1) else 1
+    diferencaAlturas = diferencaAltura pecaAtual pecaAlvo dist
+    alturaAtual = alturaEmPos pecaAtual dist
+    inclinacaoAtual = inclinacaoPeca pecaAtual
+mudaPista jogador mapa dir = jogador
+
+diferencaAltura :: Peca -> Peca -> Double -> Double
+diferencaAltura p1 p2 x = (alturaEmPos p2 x) - (alturaEmPos p1 x)
+
+alturaEmPos :: Peca -> Double -> Double
+alturaEmPos (Recta _ y) x = fromIntegral y
+alturaEmPos (Rampa _ y1 y2) x = distanciaInicioPeca * diferencaAlturas + (fromIntegral y1)
+  where
+    distanciaInicioPeca = mod' x 1
+    diferencaAlturas = fromIntegral $ y2 - y1
+
+inclinacaoPeca :: Peca -> Angulo
+inclinacaoPeca (Recta _ _) = 0
+inclinacaoPeca (Rampa _ y1 y2) = rad2deg $ atan2 (fromIntegral $ y2 - y1) 1
+
+-- | Inclina um jogador na direção especificada
+inclina :: Jogador -> Direcao -> Jogador
+inclina jogador dir = case estado of
+    Ar{} -> jogador { estadoJogador = estado {inclinacaoJogador = novaInc} }
+    estado -> jogador  -- Caso o jogador não esteja no ar, não fazemos nada 
+  where
+    estado = estadoJogador jogador
+    -- A diferença entre a nova inclinação e a anterior
+    diferenca
+        | dir == E = 15
+        | dir == D = -15
+    inc = inclinacaoJogador estado
+    novaInc = max (-90) (min 90 $ inc + diferenca)
+
+--Não verifiquei todos os casos, tive só a por a função a funcionar e já percebi mais ou menos 
+--este Record Syntax
+dispara :: Jogador -> Mapa -> (Jogador,Mapa)
+dispara jogador mapa 
+    |cola > 0 && distValida dist && chao && not emBoost = atualizaJogMap
+    |otherwise = (jogador, mapa)
+  where
+    atualizaJogMap = (jogador{colaJogador = (cola-1)}, colaMapa jogador (mapa))
+    emBoost = pisoPeca (mapa !! pistaJog !! (dist - 1)) == Boost
+    dist = truncate(distanciaJogador jogador)
+    cola = colaJogador jogador 
+    estado = estadoJogador jogador
+    chao = checkChao estado
+    pistaJog = pistaJogador jogador 
+    distValida x
+          |x >= 1 && x < length(mapa !! pistaJog) = True
+          |otherwise = False
+    
+colaPista :: Pista -> Double -> Pista
+colaPista pista dist = case pista !! n of 
+    Recta _ h     -> atualizaIndiceLista n (Recta Cola h) pista
+    Rampa _ h1 h2 -> atualizaIndiceLista n (Rampa Cola h1 h2) pista
+  where
+     n = truncate (dist - 1)
+
+colaMapa :: Jogador -> Mapa -> Mapa
+colaMapa Jogador{pistaJogador = npista, distanciaJogador = dist} mapa = atualizaIndiceLista npista pista mapa
+  where
+     pista = colaPista (mapa !! npista) dist
+
+checkChao :: EstadoJogador ->  Bool
+checkChao Chao{} = True
+checkChao _ = False
+
+pisoPeca :: Peca -> Piso
+pisoPeca (Recta piso _) = piso
+pisoPeca (Rampa piso _ _) = piso
+
+acelOuDesacel :: Int -> Jogador -> Jogador
+acelOuDesacel idAcao jogador 
+             |checkChao estado &&  idAcao == 1 = jogador{estadoJogador = Chao True}
+             |checkChao estado && idAcao == (-1) = jogador{estadoJogador = Chao False}
+             |otherwise = jogador
+    where estado = estadoJogador jogador

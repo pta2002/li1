@@ -1,0 +1,78 @@
+module Interface.Mapa where
+
+import Graphics.Gloss
+import Data.Map (Map, (!))
+import qualified Data.Map as M
+import LI11920
+import Tarefa4_2019li1g181
+import Tarefa2_2019li1g181
+import Tarefa1_2019li1g181
+import Tarefa0_2019li1g181
+import Interface.ThreeD
+import Interface.View
+import Data.Either (fromRight)
+import Data.Maybe (fromJust)
+import Graphics.Gloss.Interface.IO.Game
+import Graphics.Gloss.Juicy
+import Codec.Picture
+import Interface.Motas
+import Interface.Sprites
+import Data.List
+import Interface.Estado
+
+-- TODO usar eventos para alterar X
+
+mapa :: Mapa -> [Jogador] -> IO EstadoJogo
+mapa m js = do
+    spritesheet <- fromRight undefined <$> readImage "res/sprites.png"
+
+    return (estadoInicialMapa m js spritesheet)
+
+updateMapa :: Float -> EstadoJogo -> EstadoJogo
+updateMapa t e@EstadoJogo{ cameraX = x, sprIdle = s, mapaJogo = m, jogadoresJogo = j} =
+    e { cameraX = x --- 1 * t
+      , sprIdle = updateSprite t s
+      , jogadoresJogo = nJogadores
+      }
+  where
+    nJogadores = passo (realToFrac t) m <$> j
+
+eventMapa :: Event -> EstadoJogo -> EstadoJogo
+eventMapa _ = id
+
+drawMapa :: EstadoJogo -> Picture
+drawMapa e@EstadoJogo { objetoMapa = o, cameraX = x, sprIdle = s } = scale 64 64 $ pictures [drawObjeto (x, -5, 0) $ inserirJogadores e]
+
+inserirJogadores :: EstadoJogo -> Objeto
+inserirJogadores e@EstadoJogo{mapaJogo = m, objetoMapa = o, jogadoresJogo = j} = Combinado $ zipWith join pistas iJogadores
+  where
+    (Combinado pistas) = o
+    jogadoresPorPista = insereVazios (length m) j
+    comparaPistas a b = compare (pistaJogador b) (pistaJogador a)
+    picJogador j = Imagem (coordJogador m j) $ sprJogador e j
+    iJogadores = reverse $ Combinado <$> (map picJogador) <$> jogadoresPorPista
+    join as bs = Combinado [as,bs]
+  
+-- | Encontra a imagem para o jogador neste momento
+sprJogador :: EstadoJogo -> Jogador -> Picture
+sprJogador e j = scale (1/24) (1/24) $ getSprite $ case estadoJogador j of
+    Morto{} -> sprMorto e
+    _ -> sprIdle e
+
+insereVazios :: Int -> [Jogador] -> [[Jogador]]
+insereVazios n l = aux (replicate n []) l
+  where
+    aux acc [] = acc
+    aux acc (j@Jogador{pistaJogador = i}:t) = aux (as ++ (j:b):bs) t
+      where (as,b:bs) = splitAt i acc
+  
+-- | Encontra as coordenadas tridimensionais de um jogador
+coordJogador :: Mapa -> Jogador -> Ponto3
+coordJogador mapa Jogador{pistaJogador = z, distanciaJogador = x, estadoJogador = e} = case e of
+    Ar{alturaJogador = y} -> (realToFrac x, realToFrac y, fromIntegral z + 1)
+    _ -> (realToFrac x, realToFrac $ altura (mapa !! z) x, fromIntegral z + 1)
+
+altura :: Pista -> Double -> Double
+altura p x = alturaEmPos (p !! peca) x
+  where
+    peca = truncate x

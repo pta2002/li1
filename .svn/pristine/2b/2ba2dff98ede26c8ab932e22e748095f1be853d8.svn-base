@@ -1,0 +1,103 @@
+module Interface.Mapa where
+
+import Graphics.Gloss
+import Data.Map (Map, (!))
+import qualified Data.Map as M
+import LI11920
+import Tarefa4_2019li1g181
+import Tarefa2_2019li1g181
+import Tarefa1_2019li1g181
+import Tarefa0_2019li1g181
+import Interface.ThreeD
+import Interface.View
+import Data.Either (fromRight)
+import Data.Maybe (fromJust)
+import Graphics.Gloss.Interface.IO.Game
+import Graphics.Gloss.Juicy
+import Codec.Picture
+import Interface.Motas
+import Interface.Sprites
+import Data.List
+
+-- Pos x
+data EstadoM = EstadoM { mapaJogo :: Mapa
+                       , jogadoresJogo :: [Jogador]
+                       , cameraX :: Float
+                       , objetoMapa :: Objeto
+                       , spritesheet :: DynamicImage
+                       , sprIdle :: Sprite
+                       , sprMorto :: Sprite
+                       }
+
+estadoInicial :: Mapa -> [Jogador] -> DynamicImage -> EstadoM
+estadoInicial m js sprites = EstadoM { mapaJogo = m
+                                     , jogadoresJogo = js
+                                     , cameraX = 0
+                                     , objetoMapa = (mapaToObjeto m)
+                                     , spritesheet = sprites
+                                     , sprIdle = idleAnim sprites
+                                     , sprMorto = mortoAnim sprites
+                                     }
+
+
+-- TODO usar eventos para alterar X
+
+mapa :: Mapa -> [Jogador] -> IO (View EstadoM)
+mapa m js = do
+    spritesheet <- fromRight undefined <$> readImage "res/sprites.png"
+
+    -- TODO cortar a imagem, implementar a spritesheet e modificar os valores para cor de jogador
+
+    return $ View update
+                  event
+                  draw
+                  (estadoInicial m js spritesheet)
+
+update :: Float -> EstadoM -> EstadoM
+update t e@EstadoM{ cameraX = x, sprIdle = s, mapaJogo = m, jogadoresJogo = j} =
+    e { cameraX = x --- 1 * t
+      , sprIdle = updateSprite t s
+      , jogadoresJogo = nJogadores
+      }
+  where
+    nJogadores = passo (realToFrac t) m <$> j
+
+event :: Event -> EstadoM -> EstadoM
+event _ = id
+
+draw :: EstadoM -> Picture
+draw e@EstadoM { objetoMapa = o, cameraX = x, sprIdle = s } = scale 64 64 $ pictures [drawObjeto (x, -5, 0) $ inserirJogadores e]
+
+inserirJogadores :: EstadoM -> Objeto
+inserirJogadores e@EstadoM{mapaJogo = m, objetoMapa = o, jogadoresJogo = j} = Combinado $ zipWith join pistas iJogadores
+  where
+    (Combinado pistas) = o
+    jogadoresPorPista = insereVazios (length m) j
+    comparaPistas a b = compare (pistaJogador b) (pistaJogador a)
+    picJogador j = Imagem (coordJogador m j) $ sprJogador e j
+    iJogadores = reverse $ Combinado <$> (map picJogador) <$> jogadoresPorPista
+    join as bs = Combinado [as,bs]
+  
+-- | Encontra a imagem para o jogador neste momento
+sprJogador :: EstadoM -> Jogador -> Picture
+sprJogador e j = scale (1/24) (1/24) $ getSprite $ case estadoJogador j of
+    Morto{} -> sprMorto e
+    _ -> sprIdle e
+
+insereVazios :: Int -> [Jogador] -> [[Jogador]]
+insereVazios n l = aux (replicate n []) l
+  where
+    aux acc [] = acc
+    aux acc (j@Jogador{pistaJogador = i}:t) = aux (as ++ (j:b):bs) t
+      where (as,b:bs) = splitAt i acc
+  
+-- | Encontra as coordenadas tridimensionais de um jogador
+coordJogador :: Mapa -> Jogador -> Ponto3
+coordJogador mapa Jogador{pistaJogador = z, distanciaJogador = x, estadoJogador = e} = case e of
+    Ar{alturaJogador = y} -> (realToFrac x, realToFrac y, fromIntegral z + 1)
+    _ -> (realToFrac x, realToFrac $ altura (mapa !! z) x, fromIntegral z + 1)
+
+altura :: Pista -> Double -> Double
+altura p x = alturaEmPos (p !! peca) x
+  where
+    peca = truncate x

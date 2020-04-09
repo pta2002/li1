@@ -1,0 +1,111 @@
+-- | Este módulo define funções comuns da Tarefa 2 do trabalho prático.
+module Tarefa1_2019li1g181 where
+
+import LI11920
+import System.Random
+
+-- * Testes
+
+-- | Testes unitários da Tarefa 1.
+--
+-- Cada teste é um triplo (/número de 'Pista's/,/comprimento de cada 'Pista' do 'Mapa'/,/semente de aleatoriedades/).
+testesT1 :: [(Int,Int,Int)]
+testesT1 = [
+    (1,1,1),
+    (1,3,2),
+    (5,3,0),
+    (0,2,1),
+    (2,1,1)]
+
+-- * Funções pré-definidas da Tarefa 1.
+
+-- Gera uma lista de números aleatórios
+geraAleatorios :: Int -> Int -> [Int]
+geraAleatorios n seed = take n (randomRs (0,9) (mkStdGen seed))
+
+-- * Funções principais da Tarefa 1.
+
+gera :: Int -> Int -> Int -> Mapa
+gera _ 0 _ = error "Comprimento da pista tem de ser maior que 0"
+gera npistas comprimento semente = geraA celulas
+    where 
+        celulas = agrupaCelulas npistas (comprimento - 1) semente
+        geraA [] = []
+        geraA (h:t) = geraPista h : geraA t
+
+geraPista :: [(Int,Int)] -> [Peca]
+geraPista l = (Recta Terra 0):geraPistaA l (Recta Terra 0)
+    where geraPistaA [] anterior = []
+          geraPistaA (h:t) anterior = peca : geraPistaA t peca
+           where peca = escolhePeca anterior h
+
+-- Gera uma matrz de pares de números aleatórios
+-- Irá ser utilizada para gerar o mapa.
+agrupaCelulas :: Int -> Int -> Int -> [[(Int, Int)]]
+agrupaCelulas npistas comprimento semente = reparte npistas $ agrupa2 ns
+    where ns = geraAleatorios (comprimento * npistas * 2) semente
+
+-- Agrupa uma lista em pares.
+agrupa2 :: [a] -> [(a,a)]
+agrupa2 [] = []
+agrupa2 (a:b:t) = (a,b):agrupa2 t
+
+-- Divide uma lista em n partes
+reparte :: Int -> [a] -> [[a]]
+reparte 0 _ = []
+reparte n [] = [] : reparte (n-1) []
+reparte n l = reparteA n l objetivo
+    where
+        objetivo = div (length l) n -- O comprimento de cada sublista
+        reparteA _ [] _ = []
+        reparteA n l obj = (take obj l) : (reparteA n (drop obj l) obj)
+
+escolhePeca :: Peca -> (Int, Int) -> Peca
+escolhePeca anterior (x,y) = daPeca (escolhePiso anterior (x,y)) (rampaOuRecta anterior (x,y))
+
+              
+-- Dá o piso da peça tendo em conta os valores pseudo-aleatórios.
+escolhePiso ::Peca -> (Int, Int) -> Piso 
+escolhePiso anterior (n,_)|n == 0 || n == 1 = Terra
+                          |n == 2 || n == 3 = Relva
+                          |n == 4 = Lama
+                          |n == 5 = Boost
+                          |n >=6 && n <= 9 = pisoAnterior anterior
+-- Devolve o piso de uma peça.
+pisoAnterior :: Peca -> Piso
+pisoAnterior (Recta piso _ ) = piso
+pisoAnterior (Rampa piso _ _) = piso
+
+--Devolve uma lista com 1 ou 2, se tiver 1 elemento é uma reta se tiver dois é uma rampa. 
+--Os elementos são respetivos às alturas finais.
+rampaOuRecta :: Peca -> (Int,Int) -> [Int]
+rampaOuRecta anterior (x,y)
+    |y == 0 || y == 1 = sobeRampa anterior (x,y)
+    |(y >= 2 && y <= 5) = desceRampa anterior (x,y)
+    |otherwise = [altFinal anterior]
+
+--Funções auxiliares a rampaOuRecta que servem para devolver uma lista.
+sobeRampa :: Peca -> (Int,Int) -> [Int]
+sobeRampa (Recta _ h) (_,y) = [h,y]
+sobeRampa (Rampa _ _ h) (_,y) = [h,y] 
+    where y = h + y + 1
+
+desceRampa :: Peca -> (Int,Int) -> [Int]
+desceRampa p (_,y) = case p of (Recta _ h) -> aux h y
+                               (Rampa _ _ h) -> aux h y
+    where
+        aux 0 _ = [0]
+        aux h y
+            |dif h y >= 0 = [h,dif h y]
+            |otherwise = [h,0]
+        dif h y = h - (y-1)
+
+--Dado um piso e uma lista devolve uma Peça.
+daPeca :: Piso -> [Int] -> Peca
+daPeca piso l |length l == 1 = Recta piso (head l)
+              |otherwise = Rampa piso (head l) (last l) 
+
+--Devolve a altura final de uma peça.
+altFinal :: Peca -> Int
+altFinal (Recta _ h) = h
+altFinal (Rampa _ _ h) = h

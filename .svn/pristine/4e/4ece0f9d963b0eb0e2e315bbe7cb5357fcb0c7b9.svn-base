@@ -1,0 +1,44 @@
+-- | Este módulo define funções comuns da Tarefa 6 do trabalho prático.
+module Tarefa6_2019li1g181 where
+
+import LI11920
+import Tarefa4_2019li1g181(calculaAtrito)
+import Tarefa1_2019li1g181
+import Data.List (transpose,last,head,sortOn)
+
+-- * Funções principais da Tarefa 6.
+
+-- | Define um ro'bot' capaz de jogar autonomamente o jogo.
+bot :: Int          -- ^ O identificador do 'Jogador' associado ao ro'bot'.
+    -> Estado       -- ^ O 'Estado' para o qual o ro'bot' deve tomar uma decisão.
+    -> Maybe Jogada -- ^ Uma possível 'Jogada' a efetuar pelo ro'bot'.
+bot n e = caminhoMenosAtrito $ proxPecasRaio1 posRobot pistaRobot mapa
+    where
+        jogadores =  jogadoresEstado e
+        mapa =  mapaEstado e
+        robot = jogadores !! n
+        posRobot = truncate (distanciaJogador robot)
+        pistaRobot = pistaJogador robot
+
+proxPecasRaio1 :: Int      -- ^ A posição do ro'bot'.
+               -> Int      -- ^ A 'Pista' em que o ro'bot' se encontra.
+               -> Mapa     -- ^ O 'Mapa' a avaliar
+               -> [Double] -- ^ A lista do atrito da próxima coluna de 'Peca's colineares
+proxPecasRaio1 pos pista m
+    | length (m!!0) > pos + 1 && length m > 3  =  ( (last a) : b : [head bs]  )
+    | length (m!!0) == pos + 1 = error "o jogo acabou"
+    | otherwise = transposta
+        where
+            transposta = calculaAtrito <$> (transpose m) !! (pos + 1)
+            (a,b:bs) = splitAt pista transposta
+
+caminhoMenosAtrito :: [Double]     -- ^ A lista do atrito da próxima coluna de 'Pecas's colineares
+                   -> Maybe Jogada -- ^ Uma possível 'Jogada' a efetuar pelo ro'bot' .
+caminhoMenosAtrito l = case i of
+                0 -> Just (Movimenta C)
+                1 -> Nothing
+                2 -> Just (Movimenta B)
+    where
+        w = zip [0,1,2] l
+        (i,atrito) = head (sortOn snd w)
+

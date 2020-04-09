@@ -1,0 +1,33 @@
+-- | Este módulo define funções comuns da Tarefa 5 do trabalho prático.
+module Main where
+
+import LI11920 ()
+import Graphics.Gloss
+import Graphics.Gloss.Interface.Pure.Game
+
+import Interface.Mapa
+
+type Estado = (Float, Float)
+
+fps :: Int
+fps = 60
+
+
+dm :: Display
+dm = InWindow "ExciteBike" (400, 400) (0, 0) --FullScreen
+
+animaJog :: Estado -> Estado
+animaJog e = undefined
+-- | Função principal da Tarefa 5.
+--
+-- __NB:__ Esta Tarefa é completamente livre. Deve utilizar a biblioteca <http://hackage.haskell.org/package/gloss gloss> para animar o jogo, e reutilizar __de forma completa__ as funções das tarefas anteriores.
+main :: IO ()
+main = do
+    mota <- loadBMP "/home/jose/Universidade/LI1/Fotos/bike_sprite.bmp"
+    play dm
+         (greyN 0.5)
+         framerate
+         (0, 0)
+         (\(x,y) -> Translate x y $ mota)--Polygon [(0, 0), (10, 0), (10, 10), (0, 10), (0,0)])
+         (\_ e -> e)
+         (\t (x,y) -> (x + t, y + t))

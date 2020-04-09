@@ -1,0 +1,28 @@
+module Main where
+
+import Graphics.Gloss
+import Data.Map (Map, (!))
+import qualified Data.Map as M
+import LI11920
+import Tarefa1_2019li1g181
+import Tarefa0_2019li1g181
+import Interface.ThreeD
+import Interface.View
+
+fps :: Int
+fps = 60
+
+-- Pos x
+type EstadoM = (Mapa, Objeto, Float)
+
+-- TODO usar eventos para alterar X
+
+mapa :: Mapa -> View EstadoM
+mapa m = View (\t (m,o,x) -> (m, o, x - 5 * t)) -- Update
+              (\_ a -> a)             -- Event
+              (\(m, o, x) -> scale 64 64 $ drawObjeto (x, -5, 0) $ o)
+              (m, mapaToObjeto m, 0)
+
+main :: IO ()
+main = do
+    runView (InWindow "Mapa" (800, 600) (10, 10)) cyan fps $ mapa (gera 10 100 2)

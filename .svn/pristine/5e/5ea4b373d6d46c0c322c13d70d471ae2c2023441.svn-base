@@ -1,0 +1,177 @@
+{-| 
+    Module      : Tarefa1_2019li1g181
+    Description : Módulo que contém a função principal (@gera@) da Tarefa 1.
+
+    Este módulo define funções comuns da Tarefa 2 do trabalho prático.
+-}
+module Tarefa1_2019li1g181 where
+
+import LI11920
+import Tarefa0_2019li1g181 (Matriz)
+import System.Random
+
+-- * Testes
+
+-- | Testes unitários da Tarefa 1.
+--
+-- Cada teste é um triplo (/número de 'Pista's/,/comprimento de cada 'Pista' do 'Mapa'/,/semente de aleatoriedades/).
+testesT1 :: [(Int,Int,Int)]
+testesT1 = [
+    (1,1,1), (1,2,3),
+    (1,3,2), (1,3,2),
+    (5,3,0), (1,100,3),
+    (0,2,1), (100, 100, 3),
+    (2,1,1), (5,5,5),
+    (3,2,0), (1000, 10, 1),
+    (4,4,2), (1,1,2)]
+
+-- * Funções pré-definidas da Tarefa 1.
+
+-- | Gera uma lista de números aleatórios entre 0 e 9
+geraAleatorios :: Int    -- ^ A quantidade de números a gerar
+               -> Int    -- ^ A semente para o gerador
+               -> [Int]  -- ^ A lista de números gerados
+geraAleatorios n seed = take n (randomRs (0,9) (mkStdGen seed))
+
+-- * Tipos da Tarefa 1.
+-- | Uma 'Celula' de 2 números aleatorios que vai ser utilizada para criar o mapa final.
+type Celula = (Int, Int)
+
+-- * Funções principais da Tarefa 1.
+
+-- | Gera um 'Mapa' com o número de pistas e comprimento fornecido.
+--
+-- O primeiro elemento de cada 'Pista' é sempre @Recta Terra 0@.
+-- 
+-- == Exemplos de utilização
+-- >>> gera 1 2 1
+-- [[Recta Terra 0, Recta Boost 0]]
+gera :: Int  -- ^ O número de pistas a gerar
+     -> Int  -- ^ O comprimento de cada pista
+     -> Int  -- ^ A semente a utilizar para a geração do mapa
+     -> Mapa -- ^ O 'Mapa' resultante
+gera npistas comprimento semente
+    | comprimento <= 0 || npistas <= 0 = error "Comprimento e número de pistas têm de ser maior que 0"
+    | otherwise = geraA celulas
+  where 
+    celulas = agrupaCelulas npistas (comprimento - 1) semente
+    geraA [] = []
+    geraA (h:t) = geraPista h : geraA t
+
+-- | Gera uma pista a partir de uma lista de 'Celula's.
+-- As pistas começam sempre com a 'Peca' @Recta Terra 0@.
+geraPista :: [Celula] -> Pista
+geraPista l = (Recta Terra 0):geraPistaA l (Recta Terra 0)
+  where
+    geraPistaA [] anterior = []
+    geraPistaA (h:t) anterior = peca : geraPistaA t peca
+      where
+        peca = escolhePeca anterior h
+
+-- * Funções para gerar a matriz inicial de células
+-- | Gera uma 'Matriz' de 'Celula's com um determinado tamanho, que irá ser utilizada para gerar o mapa
+agrupaCelulas :: Int           -- ^ O número de linhas da matriz
+              -> Int           -- ^ O comprimento de cada linha
+              -> Int           -- ^ A semente utilizada para gerar os números aleatórios
+              -> Matriz Celula -- ^ A 'Matriz' resultante
+agrupaCelulas npistas comprimento semente = reparte npistas $ agrupa2 ns
+  where
+    ns = geraAleatorios (comprimento * npistas * 2) semente
+
+-- | Agrupa uma lista em pares.
+-- 
+-- == Exemplos de utilização
+-- >>> agrupa2 [1,2,3,4,5,6]
+-- [(1,2), (3,4), (5,6)]
+-- 
+-- >>> agrupa2 "abcd"
+-- [('a','b'), ('c','d')]
+agrupa2 :: [a] -> [(a,a)]
+agrupa2 [] = []
+agrupa2 (a:b:t) = (a,b):agrupa2 t
+
+-- | Divide uma lista em @n@ listas do mesmo comprimento
+-- 
+-- == Exemplos de utilização
+-- >>> reparte 2 [1,2,3,4]
+-- [[1,2], [3,4]]
+-- 
+-- >>> reparte 1 [1,2,3,4]
+-- [[1,2,3,4]]
+reparte :: Int -> [a] -> Matriz a
+reparte 0 _ = []
+reparte n [] = [] : reparte (n-1) []
+reparte n l = reparteA n l objetivo
+  where
+    objetivo = div (length l) n -- O comprimento de cada sublista
+    reparteA _ [] _ = []
+    reparteA n l obj = (take obj l) : (reparteA n (drop obj l) obj)
+
+
+-- * Funções para converter a matriz de células numa matriz de peças
+-- | Converte uma 'Celula' numa 'Peca'.
+--
+-- Nota: devido à maneira como o gerador de mapas funciona, esta função necessita da peça anterior.
+escolhePeca :: Peca   -- ^ A 'Peca' anterior
+            -> Celula -- ^ A 'Celula' para converter numa 'Peca'
+            -> Peca   -- ^ A 'Peca' resultante
+escolhePeca anterior (x,y) = daPeca (escolhePiso anterior (x,y)) (rampaOuRecta anterior (x,y))
+
+-- | Escolhe o 'Piso' de uma nova 'Peca', utilizando a 'Celula' que a vai gerar.
+--
+-- Nota: devido à maneira como o gerador de mapas funciona, esta função necessita da peça anterior.
+escolhePiso :: Peca   -- ^ A 'Peca' anterior
+            -> Celula -- ^ A 'Celula' para a qual queremos determinar o 'Piso'
+            -> Piso   -- ^ O 'Piso' correspondente a esta 'Celula'
+escolhePiso anterior (n,_)
+    | n == 0 || n == 1 = Terra
+    | n == 2 || n == 3 = Relva
+    | n == 4 = Lama
+    | n == 5 = Boost
+    | n >= 6 && n <= 9 = piso anterior
+
+-- | Devolve o 'Piso' de uma 'Peca'.
+piso :: Peca -> Piso
+piso (Recta p _ ) = p
+piso (Rampa p _ _) = p
+
+-- | Converte uma 'Celula' numa representação intermédia antes de ser finalmente convertida numa
+-- 'Peca' pela função 'daPeca'.
+--
+-- Devolve uma lista com 1 ou 2 elementos, se tiver 1 elemento é uma 'Recta' se tiver dois é uma
+-- 'Rampa'. 
+-- Os elementos são respetivos às alturas finais.
+rampaOuRecta :: Peca -> Celula -> [Int]
+rampaOuRecta anterior (x,y)
+    | y == 0 || y == 1 = sobeRampa anterior (x,y)
+    | (y >= 2 && y <= 5) = desceRampa anterior (x,y)
+    | otherwise = [altFinal anterior]
+
+-- ** Funções auxiliares a rampaOuRecta que servem para devolver uma lista.
+-- | Converte uma 'Celula' numa representação intermédia de uma 'Rampa' que sobe
+sobeRampa :: Peca -> (Int,Int) -> [Int]
+sobeRampa (Recta _ h) (_,y) = [h, h + y + 1]
+sobeRampa (Rampa _ _ h) (_,y) = [h, h + y + 1] 
+
+-- | Converte uma 'Celula' numa representação intermédia de uma 'Rampa' que desce.
+desceRampa :: Peca -> (Int,Int) -> [Int]
+desceRampa p (_,y) = case p of
+    (Recta _ h)   -> aux h y
+    (Rampa _ _ h) -> aux h y
+  where
+    aux 0 _ = [0]
+    aux h y
+        | dif h y >= 0 = [h,dif h y]
+        | otherwise = [h,0]
+    dif h y = h - (y-1)
+
+-- | Junta um 'Piso' e a representação intermédia de uma 'Peca' numa 'Peca'.
+daPeca :: Piso -> [Int] -> Peca
+daPeca piso l
+    | length l == 1 = Recta piso (head l)
+    | otherwise = Rampa piso (head l) (last l) 
+
+-- | Devolve a altura final de uma 'Peca'.
+altFinal :: Peca -> Int
+altFinal (Recta _ h) = h
+altFinal (Rampa _ _ h) = h

@@ -1,0 +1,63 @@
+-- | Este módulo define funções comuns da Tarefa 4 do trabalho prático.
+module Tarefa4_2019li1g181 where
+
+import LI11920
+import Tarefa2_2019li1g181 (encontraPeca,checkChao)
+import Tarefa1_2019li1g181 (piso)
+
+-- * Testes
+-- | Testes unitários da Tarefa 4.
+--
+-- Cada teste é um par (/tempo/,/'Mapa'/,/'Jogador'/).
+testesT4 :: [(Double,Mapa,Jogador)]
+testesT4 = []
+
+-- * Funções principais da Tarefa 4.
+
+-- | Avança o estado de um 'Jogador' um 'passo' em frente, durante um determinado período de tempo.
+passo :: Double -- ^ O tempo decorrido.
+      -> Mapa    -- ^ O mapa utilizado.
+      -> Jogador -- ^ O estado anterior do 'Jogador'.
+      -> Jogador -- ^ O estado do 'Jogador' após um 'passo'.
+passo t m j = move t m (acelera t m j)
+
+-- | Altera a velocidade de um 'Jogador', durante um determinado período de tempo.
+acelera :: Double -- ^ O tempo decorrido.
+        -> Mapa    -- ^ O mapa utilizado.
+        -> Jogador -- ^ O estado anterior do 'Jogador'.
+        -> Jogador -- ^ O estado do 'Jogador' após acelerar.
+acelera t m j  
+    |estaChao = j{velocidadeJogador = max 0 velNova}
+    |otherwise = j{velocidadeJogador = max 0 velNovaAr, gravidadeJogador = gravNova}
+  where
+    velNovaAr = velJogador - (resAr * velJogador * t)
+    gravNova = gravJog + (accelGravidade * t)  
+    gravJog = gravidadeJogador j
+    estaChao = checkChao $ estadoJogador j 
+    velNova = velJogador + (accelMota - atrito * velJogador) * t
+    accelMota = if (velJogador < 2 && accelJogador) then 1 else 0
+    velJogador = velocidadeJogador j
+    accelJogador = case j of
+      j{ estadoJogador = Chao True } -> True
+      _ -> False
+    atrito = calculaAtrito (encontraPeca j m)
+
+-- | Calcula o atrito de uma 'Peca'
+calculaAtrito :: Peca   -- ^ A 'Peca'
+              -> Double -- ^ O atrito
+calculaAtrito p = case piso p of
+    Terra -> 0.25
+    Relva -> 0.75
+    Lama  -> 1.5
+    Boost -> (-0.5)
+    Cola  -> 3
+
+-- | A resistência do ar
+resAr = 0.125
+
+-- | Altera a posição de 'Jogador', durante um determinado período de tempo.
+move :: Double -- ^ O tempo decorrido.
+     -> Mapa    -- ^ O mapa utilizado.
+     -> Jogador -- ^ O estado anterior do 'Jogador'.
+     -> Jogador -- ^ O estado do 'Jogador' após se movimentar.
+move = undefined

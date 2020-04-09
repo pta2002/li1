@@ -1,0 +1,21 @@
+module Main where
+
+import Graphics.Gloss
+import Data.Map (Map, (!))
+import qualified Data.Map as M
+import LI11920
+import Tarefa1_2019li1g181
+import Tarefa0_2019li1g181
+import Interface.ThreeD
+
+fps :: Int
+fps = 60
+
+-- Pos x
+type Estado = Int
+
+-- TODO usar eventos para alterar X
+
+main :: IO ()
+main = do
+    display (InWindow "Mapa" (800, 600) (10, 10)) cyan $ scale 64 64 $ drawObjeto (0, 0, 0) $ mapaToObjeto (gera 10 100 2)

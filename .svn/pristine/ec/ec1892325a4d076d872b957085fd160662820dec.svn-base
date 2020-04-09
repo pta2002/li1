@@ -1,0 +1,53 @@
+module Interface.Mapa where
+
+import Graphics.Gloss
+import Data.Map (Map, (!))
+import qualified Data.Map as M
+import LI11920
+import Tarefa1_2019li1g181
+
+-- TODO isto tem de ficar em algum tipo de cache
+pecaPicture :: Peca -> IO Picture
+pecaPicture (Recta p _) = pisoPicture p
+
+pisoPicture :: Piso -> IO Picture
+pisoPicture Terra = loadBMP "res/terra.bmp"
+pisoPicture Relva = loadBMP "res/relva.bmp"
+pisoPicture Boost = loadBMP "res/boost.bmp"
+pisoPicture Lama = loadBMP "res/lama.bmp"
+pisoPicture Cola = loadBMP "res/cola.bmp"
+
+data EstadoM = EstadoMapa { pecas :: Map Piso Picture -- ^ Guardar as imagens para nao estar a carregar sempre do disco
+                          , estado :: Estado
+                          }
+
+-- !!!!! Para poder meter isto num Map, é preciso que Piso seja Ord, por isso adicionei essa classe
+-- !!!!! mas não sei se posso fazer isso.
+loadPics :: IO (Map Piso Picture)
+loadPics = sequence $ M.insert Terra (pisoPicture Terra) $
+                      M.insert Relva (pisoPicture Relva) $
+                      M.insert Boost (pisoPicture Boost) $
+                      M.insert Cola (pisoPicture Cola) $
+                      M.insert Lama (pisoPicture Lama) M.empty
+
+estadoMInicial pics = EstadoMapa pics
+
+fps :: Int
+fps = 60
+
+-- TODO Rampas!
+drawPeca :: (Map Piso Picture) -> Peca -> Picture
+drawPeca m (Recta p h) = pictures [ translate 0 height (m ! p) 
+                                  , color (makeColor (63 / 255) (40 / 255) (50 / 255) 1) $ polygon [(-32,-32), (-32, height - 32), (32, height - 32), (32, -32), (-32,-32)]]
+  where
+    height = fromIntegral $ 32 * h
+
+drawPista :: (Map Piso Picture) -> Pista -> Picture
+drawPista m [] = pictures []
+drawPista m (h:t) = pictures [drawPeca m h, translate 64 0 (drawPista m t)]
+
+main :: IO ()
+main = do
+    p <- loadPics
+    let estado = estadoMInicial p
+    display (InWindow "Mapa" (800, 600) (10, 10)) cyan $ drawPista p [Recta Terra 0, Recta Relva 1, Recta Relva 1, Recta Cola 0, Recta Boost 0, Recta Lama 0]

@@ -1,0 +1,81 @@
+module Interface.Estado where
+
+import LI11920
+import Tarefa1_2019li1g181
+import Graphics.Gloss
+import Graphics.Gloss.Juicy
+import Graphics.Gloss.Interface.IO.Game
+import Interface.ThreeD
+import Interface.Sprites
+import Interface.Motas
+import Codec.Picture
+
+data Instancia = Menu | DesenhaMapa Estado | Niveis 
+          deriving Show
+data EstadoButton = EstadoButton { instancia :: Instancia
+                                 , dimensao :: Dimensao
+                                 , ponto :: Point
+                                 , selecionado :: Bool
+                                 , ativo :: Bool
+                                 , imagem :: Picture
+                                 , imagemSel :: Picture
+                                 } deriving Show
+
+type Dimensao = (Float,Float)
+
+data EstadoJogo = EstadoMenu { botoes :: [EstadoButton]
+                             , imagens :: [Picture] }
+                | EstadoJogo { mapaJogo :: Mapa
+                             , jogadoresJogo :: [Jogador]
+                             , cameraX :: Float
+                             , objetoMapa :: Objeto
+                             , spritesheet :: DynamicImage
+                             , sprsIdle :: [Sprite]
+                             , sprsMorto :: [Sprite]
+                             , botTimer :: Float
+                             , jogadoresAcabados :: [Int]
+                             }
+                | EstadoFinal { posicao :: Int, spr :: Sprite }
+
+mapaDefault :: Mapa
+mapaDefault = [[Recta Terra 0, Recta Terra 0]]
+
+jogadoresDefault :: [Jogador]
+jogadoresDefault = [Jogador 0 0 1 1 (Chao False)]
+
+estadoDefault :: Estado
+estadoDefault = Estado mapaDefault jogadoresDefault
+
+estadoMenu :: [Picture] -> EstadoJogo
+estadoMenu li = EstadoMenu{ botoes = [ botaoMapa {-, botaoNiveis, botaoMenu-}], imagens = li}
+  where
+    (fundo:menB:menBS:mapB:mapBS:nivB:nivBS:[]) = li
+    botaoMapa = EstadoButton (DesenhaMapa estadoDefault) (240,80) (0,0) True True (scale 0.4 0.4 mapBS)  (scale 0.4 0.4 mapB)
+    botaoNiveis = EstadoButton Niveis (240,80) (0,-120) False True (scale 0.4 0.4 nivB) (scale 0.4 0.4 nivBS)
+    botaoMenu = EstadoButton Menu  (240,80) (0,-240) False True (scale 0.4 0.4 menB ) (scale 0.4 0.4 menBS)
+
+estadoInicialMenu :: IO EstadoJogo
+estadoInicialMenu = do
+    menB <- loadBMP "res/LI1_botao_Menu.bmp"
+    menBS <- loadBMP "res/LI1_botao_Menu_selec.bmp"
+    mapB <- loadBMP "res/LI1_botao_Mapa.bmp"
+    mapBS <- loadBMP "res/LI1_botao_Mapa_selec.bmp"
+    nivB <- loadBMP "res/LI1_botao_Niveis.bmp"
+    nivBS <- loadBMP "res/LI1_botao_Niveis_selec.bmp"
+    Just logo <- fmap (scale 4 4 . translate 0 (35)) <$> loadJuicyPNG "res/logo.png"
+
+    let estadoI = estadoMenu [logo, menB, menBS, mapB, mapBS, nivB, nivBS]
+
+    return estadoI
+
+estadoInicialMapa :: Mapa -> [Jogador] -> DynamicImage -> EstadoJogo
+estadoInicialMapa m j s = EstadoJogo { mapaJogo = m
+                                     , jogadoresJogo = j
+                                     , cameraX = 0
+                                     , objetoMapa = mapaToObjeto m
+                                     , spritesheet = s
+                                     , sprsIdle = map (idleAnim s) [0..((length j) - 1)]
+                                     , sprsMorto = map (mortoAnim s) [0..((length j) - 1)]
+                                     , botTimer = 0
+                                     , jogadoresAcabados = []
+                                     }

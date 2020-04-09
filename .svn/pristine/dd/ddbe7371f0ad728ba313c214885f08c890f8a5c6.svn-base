@@ -1,0 +1,168 @@
+-- | Este módulo define funções comuns da Tarefa 3 do trabalho prático.
+module Tarefa3_2019li1g181 where
+
+import LI11920
+import Tarefa0_2019li1g181
+import Tarefa1_2019li1g181
+import Tarefa2_2019li1g181
+
+import Data.List (group,nubBy,sort,transpose)
+
+-- TODO: Agrupar instruções que afetam as mesmas pistas, e utilizar o comprimeRepeticoesIguais nelas
+-- TODO: Antes disso, aplicar o comprimeRepeticoesVerticais
+-- * Testes
+
+-- | Testes unitários da Tarefa 3.
+--
+-- Cada teste é um 'Mapa'.
+testesT3 :: [Mapa]
+testesT3 =
+    [(gera 2 5 1),  (gera 4 10 3)
+    ,(gera 4 15 5), (gera 5 10 4)
+    ]
+
+-- * Funções principais da Tarefa 3.
+
+-- | Desconstrói um 'Mapa' numa sequência de 'Instrucoes'.
+--
+-- __NB:__ Uma solução correcta deve retornar uma sequência de 'Instrucoes' tal que, para qualquer mapa válido 'm', executar as instruções '(desconstroi m)' produza o mesmo mapa 'm'.
+--
+-- __NB:__ Uma boa solução deve representar o 'Mapa' dado no mínimo número de 'Instrucoes', de acordo com a função 'tamanhoInstrucoes'.
+desconstroi :: Mapa -> Instrucoes
+desconstroi mapa =  repeticoesDeUm $ comprimeRepeticoesIguais $ comprimeRepeticoesVerticais n $ mapaToInstrucoes 0 m
+ where
+  m = map tail (mapa)
+  n = length (head m)
+
+-- | Procura padrões Horizontais
+comprimeRepeticoesIguais :: Instrucoes -> Instrucoes
+comprimeRepeticoesIguais l = zipWith Repete (map length g) (map (\(h:t) -> [h]) g)
+  where
+    g = group l
+
+-- | Converte instruções do tipo Repete 1 instrução para a sua respetiva instrução
+repeticoesDeUm :: Instrucoes -> Instrucoes 
+repeticoesDeUm [] = []
+repeticoesDeUm ((Repete 1 x):t) = x ++ repeticoesDeUm t
+repeticoesDeUm (h:t) = h : repeticoesDeUm t
+
+-- |Procura padrões verticais em diferentes pistas
+comprimeRepeticoesVerticais :: Int -> Instrucoes -> Instrucoes
+comprimeRepeticoesVerticais n l = concat (agrupaTodas n l)
+
+-- | Aplica agrupaColuna a instruções sem compressão
+agrupaTodas :: Int -> Instrucoes -> [Instrucoes] 
+agrupaTodas n l = map agrupaColuna (instrucoesPorColuna n l)
+
+agrupaColuna :: Instrucoes -> Instrucoes
+agrupaColuna l = map compactaInstrucoes (aux l [])
+  where
+    aux ::  Instrucoes-> [Instrucoes] -> [Instrucoes]
+    aux [] l  = l
+    aux (h:t) l  = aux t (insere h l)
+
+
+compactaInstrucoes :: Instrucoes -> Instrucao
+compactaInstrucoes [x] = x
+compactaInstrucoes (h:t) = combina h (compactaInstrucoes t)
+
+combina :: Instrucao -> Instrucao -> Instrucao
+combina (Anda a x) (Anda b _) = Anda (sort (a ++ b)) x
+combina (Sobe a x y) (Sobe b _ _) = Sobe (sort(a ++ b)) x y
+combina (Desce a x y) (Desce b _ _) = Desce (sort(a ++ b)) x y
+combina (Teleporta a x) (Teleporta b _) = Teleporta (sort(a ++ b)) x
+
+insere :: Instrucao -> [Instrucoes] -> [Instrucoes]
+insere i [] = [[i]]
+insere a (b:t)
+    | instrucoesIguais a (head b) = (a:b):t
+    | otherwise = b:insere a t
+
+-- |Esta função dispõe as funções por coluna
+instrucoesPorColuna :: Int -> Instrucoes -> [Instrucoes]
+instrucoesPorColuna n l = aux l 0
+  where
+    aux x i
+        | i > n - 1 = []
+        | otherwise = (instrucoesColuna n x i) : (aux x (i+1))
+    
+
+instrucoesColuna :: Int -> Instrucoes -> Int -> [Instrucao]
+instrucoesColuna n l id = aux l id 
+  where
+    aux x i  
+        | i > (length x) -1 = []
+        | otherwise = (x !! i) : aux x (i+n)
+         
+instrucoesIguais :: Instrucao -> Instrucao -> Bool
+instrucoesIguais (Anda _ x) (Anda _ y) = x == y
+instrucoesIguais (Sobe _ x  h1) (Sobe _ y h2) = x==y && h1 == h2
+instrucoesIguais (Desce _ x h1) (Desce _ y h2) = x == y && h1 == h2
+instrucoesIguais (Teleporta _ x) (Teleporta _ y) = x == y
+instrucoesIguais _ _ = False
+
+-- | Esta função gera as instruções basicas do mapa, sem qualquer otimização
+mapaToInstrucoes :: Int ->  Mapa -> Instrucoes
+mapaToInstrucoes _ [] = []
+mapaToInstrucoes id (h:t) =  pistaToInstrucoes id h ++ mapaToInstrucoes (id+1) t
+        
+pistaToInstrucoes :: Int -> Pista -> Instrucoes 
+pistaToInstrucoes _ [] = []
+pistaToInstrucoes id (h:t) = pecaToInstrucao id h : pistaToInstrucoes id t       
+
+pecaToInstrucao :: Int -> Peca -> Instrucao 
+pecaToInstrucao id (Recta piso h)  = Anda [id] piso
+pecaToInstrucao id (Rampa piso h1 h2) 
+    |h1 > h2 = Desce [id] piso dif
+    |otherwise = Sobe [id] piso dif 
+  where
+    dif = abs (h1 - h2)
+
+-- | Devolve o primeiro elemento e, se existir, o segundo num par.
+primeiraESegunda :: [a] -> (a, Maybe a)
+primeiraESegunda (a:[]) = (a, Nothing)
+primeiraESegunda (a:b:t) = (a, Just b)
+
+-- | Agrupa elementos de uma lista com base numa função de comparação
+groupBy2 :: (a -> a -> Bool) -> [a] -> [[a]]
+groupBy2 f [] = []
+groupBy2 f (h:t) = insertBy f h (groupBy2 f t)
+
+insertBy :: (a -> a -> Bool) -> a -> [[a]] -> [[a]]
+insertBy f x [] = [[x]]
+insertBy f x ((a:as):t)
+    | f x a = (x:a:as):t
+    | otherwise = (a:as):insertBy f x t
+
+comprimeDesfazados :: [Instrucoes] -> Instrucoes
+comprimeDesfazados ([]:_) = []
+comprimeDesfazados l
+    | length listaAgrupada == 1 = compactaInstrucoes (head listaAgrupada) : comprimeDesfazados (tail <$> l)
+    | otherwise = concat listaAgrupada ++ comprimeDesfazados (tail <$> l)
+    -- Procurar em todos os elementos se esse elemento aparece mais à frente noutras listas
+    -- Se aparecere não estiver na coluna atual, esperar até que apareça
+    -- Senão, avançar.
+  where
+    listaAgrupada = groupBy2 instrucoesIguais (head <$> l)
+
+ocorre :: Instrucao -> [Instrucoes] -> Maybe (Int, Instrucao)
+ocorre i l = minimumBy compara (map (ocorreEmLista i) (map tail l))
+  where
+    compara :: Maybe (Int, Instrucao) -> Maybe (Int, Instrucao) -> Ordering 
+    compara Nothing Nothing = EQ
+    compara Nothing _ = GT
+    compara _ Nothing = LT
+    compara (Just (n,_)) (Just (m,_)) = compare n m
+
+-- | Encontra o menor elemento de uma lista com base numa função
+minimumBy :: (a -> a -> Ordering) -> [a] -> a
+minimumBy f [x] = x
+minimumBy f (h:t) = case f h (minimumBy f t) of
+    LT -> h
+    _  -> minimumBy f t
+
+ocorreEmLista :: Instrucao -> Instrucoes -> Maybe (Int, Instrucao)
+ocorreEmLista i [] = Nothing
+ocorreEmLista i (h:t)
+    | instrucoesIguais h i = Just (0, h)
+    | otherwise = fmap (\(n,x) -> (n+1, x)) $ ocorreEmLista i t

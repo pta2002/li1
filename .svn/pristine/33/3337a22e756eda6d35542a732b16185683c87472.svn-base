@@ -1,0 +1,55 @@
+-- | Este módulo define funções comuns da Tarefa 3 do trabalho prático.
+module Tarefa3_2019li1g181 where
+
+import LI11920
+import Tarefa0_2019li1g181
+import Tarefa1_2019li1g181
+import Tarefa2_2019li1g181
+
+-- * Testes
+
+-- | Testes unitários da Tarefa 3.
+--
+-- Cada teste é um 'Mapa'.
+testesT3 :: [Mapa]
+testesT3 = [
+        (gera 2 5 1),(gera 4 10 3)
+        (gera 4 15 5), (gera 5 10 4)
+]
+
+-- * Funções principais da Tarefa 3.
+
+-- | Desconstrói um 'Mapa' numa sequência de 'Instrucoes'.
+--
+-- __NB:__ Uma solução correcta deve retornar uma sequência de 'Instrucoes' tal que, para qualquer mapa válido 'm', executar as instruções '(desconstroi m)' produza o mesmo mapa 'm'.
+--
+-- __NB:__ Uma boa solução deve representar o 'Mapa' dado no mínimo número de 'Instrucoes', de acordo com a função 'tamanhoInstrucoes'.
+desconstroi :: Mapa -> Instrucoes
+desconstroi mapa = mapaToInstrucoes (length mapa - 1 ) 0 mapa
+
+
+mapaToInstrucoes :: Int -> Int ->  Mapa -> Instrucoes
+mapaToInstrucoes _ _ [] = []
+mapaToInstrucoes idMax id (h:t)
+          |id > idMax  = []
+          |otherwise = pistaToInstrucoes id h ++ mapaToInstrucoes idMax (id+1) t
+        
+pistaToInstrucoes :: Int -> Pista -> Instrucoes 
+pistaToInstrucoes _ [] = []
+pistaToInstrucoes id (h:t) = pecaToInstrucao id h : pistaToInstrucoes id t       
+
+pecaToInstrucao :: Int -> Peca -> Instrucao 
+pecaToInstrucao id (Recta piso h)  = Anda [id] piso
+pecaToInstrucao id (Rampa piso h1 h2) 
+                    |h1 > h2 = Desce [id] piso dif
+                    |otherwise = Sobe [id] piso dif 
+         where dif = abs (h1 - h2)
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,431 @@
+{-|
+Module      : Tarefa3_2019li1g181
+Description : Módulo que contem a função principal (@desconstroi@) da Tarefa 3
+
+Este módulo define funções comuns da Tarefa 3 do trabalho prático.
+
+= Introdução
+Nesta tarefa o desafio era conseguir comprimir um ‘Mapa’. De forma, a que o ‘Mapa’ consiga ser 
+traduzido pelo o menor número de instruções, que posteriormente um bulldozer consiga utilizar para 
+reconstruir o ‘Mapa’.
+
+
+=  Objetivos
+O primeiro objetivo foi realizar a tradução básica de um ‘Mapa’ em instruções. Ou seja, traduzir cada ‘Peca’
+do ‘Mapa’ numa ‘Instrucao’. Assim, como seria de esperar não havia nenhum tipo de compressão, pois o número de
+instruções seria igual ao número de ‘Peca’s existentes no ‘Mapa’.
+
+De seguida, tendo sempre em vista o desafio da tarefa, decidimos utilizar a ‘Instrucao’ Repete para representar
+numa ‘Instrucao’, instruções consecutivas e repetidas. (Padrões horizontais). Assim, o número total de 
+instruções diminui significativamente, mas sabíamos que em certos casos podiam apareceer outros padrões, 
+tais como padrões verticais. Ou seja, que haviam ‘Peca’s iguais na mesma posição, nas suas respetivas 
+‘Pista’s , e portanto o bulldozer podia avançar com a mesma ‘Instrucao’ ao mesmo tempo, diminuindo o número 
+de instruções. 
+
+Por fim, tinhamos como objetivo identifcar padrões verticais desfasados. Usando a ‘Instrucao’ Teleporta 
+diminuir o número de instruções.
+
+= Conclusão
+Em suma, conseguimos exucutar dois dos objetivos que nos propusemos a atingir. Desta forma conseguimos reduzir
+o número de intruções. No entanto, faltou apenas conseguir executar o terceiro e final objetivo de conseguir
+implementar uma função que atua-se perante os padrões desfasados.
+
+-}                                                                                  
+
+module Tarefa3_2019li1g181 where
+
+import LI11920
+import Tarefa0_2019li1g181
+import Tarefa1_2019li1g181
+import Tarefa2_2019li1g181
+
+import Data.List (group,nubBy,sort,transpose, zipWith3)
+
+-- TODO: Agrupar instruções que afetam as mesmas pistas, e utilizar o comprimeRepeticoesIguais nelas
+-- TODO: Antes disso, aplicar o comprimeRepeticoesVerticais
+-- * Testes
+
+-- | Testes unitários da Tarefa 3.
+--
+-- Cada teste é um 'Mapa'.
+testesT3 :: [Mapa]
+testesT3 =
+    [(gera 2 5 1),  (gera 4 10 3)
+    ,(gera 4 15 5), (gera 5 10 4)
+    ,(gera 4 15 7), (gera 1 10 2)
+    ]
+
+-- * Funções principais da Tarefa 3.
+
+-- | Desconstrói um 'Mapa' numa sequência de 'Instrucoes'.
+--
+-- __NB:__ Uma solução correcta deve retornar uma sequência de 'Instrucoes' tal que, para qualquer mapa válido 'm', executar as instruções '(desconstroi m)' produza o mesmo mapa 'm'.
+--
+-- __NB:__ Uma boa solução deve representar o 'Mapa' dado no mínimo número de 'Instrucoes', de acordo com a função 'tamanhoInstrucoes'.
+
+-- * Funções principais tarefa 3
+
+{- | 
+Gera o menor número 'Instrucoes' necessárias a partir de um 'Mapa'
+
+Não gera a 'Instrucao' da primeira 'Peca' de cada 'Pista'
+
+== Exemplos de utilização
+>>> desconstroi (gera 1 2 1)
+[Anda [0] Boost] 
+-}
+desconstroi :: Mapa       -- ^ O 'Mapa' que se pretende desconstruir 
+            -> Instrucoes -- ^ As 'Instrucoes' resultantes
+-- desconstroi mapa =  comprimeVerticais 0 $ (repeticoesDeUm <$> comprimeRepeticoesIguais <$> comprimeTeleporta (zipWith pistaToInstrucoes [0..] (map tailVazia mapa)))  --comprimeRepeticoesVerticais n $ mapaToInstrucoes 0 m
+desconstroi mapa = repeticoesDeUm $ comprimeRepeticoesIguais $ comprimeRepeticoesVerticais n $ mapaToInstrucoes 0 m
+  where
+    m = map tail (mapa)
+    n = length (head m)
+
+-- * Funções relativas aos padrões horizontais
+
+-- | Procura padrões horizontais e comprime 'Instrucoes' utilizando a Instrucao 'Repete' 
+comprimeRepeticoesIguais :: Instrucoes -- ^ As 'Instrucoes' que se pretendem comprimir 
+                         -> Instrucoes -- ^ As 'Instrucoes' resultantes
+comprimeRepeticoesIguais l = zipWith Repete (map length g) (map (\(h:t) -> [h]) g)
+  where
+    g = group l
+
+-- | Converte instruções do tipo Repete 1 instrução para a sua respetiva instrução
+repeticoesDeUm :: Instrucoes -- ^ As 'Instrucoes' que se pretendem converter 
+               -> Instrucoes -- ^ As 'Instrucoes' resultantes
+repeticoesDeUm [] = []
+repeticoesDeUm ((Repete 1 x):t) = x ++ repeticoesDeUm t
+repeticoesDeUm (h:t) = h : repeticoesDeUm t
+
+-- * Funções relativas aos padrões verticais
+-- | Procura padrões verticais em diferentes pistas e comprime as 'Instrucoes'
+comprimeVerticais :: Int          -- ^ A coluna atual
+                  -> [Instrucoes] -- ^ As 'Instrucoes' que se pretendem comprimir, por pista
+                  -> Instrucoes   -- ^ As 'Instrucoes' resultantes
+comprimeVerticais n l = undefined -- comprimePorColunas n colunasDivididas
+  where
+    colunasDivididas = divideEmColunas l 0
+
+-- comprimePorColunas :: Int -> [(Int, [Int], Instrucao)] -> Instrucoes
+comprimePorColunas n [] = []
+comprimePorColunas n (h:t) = agrupados
+  where
+    colunasAtuais = takeWhile (\(_,(x:_),_) -> x == n) (h:t)
+    menosColunas = minimum ((\(_,col,_) -> length col) <$> colunasAtuais)
+    menoresAtuais = nubBy (\(a,_,_) (b,_,_) -> a == b ) $ filter (\(_,col,_) -> length col == menosColunas) colunasAtuais
+    agrupados = groupBy2 instrucoesIguais $ (\(_,_,i) -> i) <$> menoresAtuais
+    combinados = compactaInstrucoes <$> agrupados
+
+primeirasColunas :: [(Int, [Int], Instrucao)] -> [(Int, [Int], Instrucao)]
+primeirasColunas [] = []
+
+divideEmColunas :: [Instrucoes]
+                -> Int
+                -> [(Int, [Int], Instrucao)]
+divideEmColunas [] i = []
+divideEmColunas (h:t) i = map (\(a,b) -> (i,a,b)) (dividePista h 0) ++ divideEmColunas t (i+1)
+
+dividePista :: Instrucoes -> Int -> [([Int], Instrucao)]
+dividePista [] i = []
+dividePista (h:t) i = (afetadas, h) : dividePista t proxima
+  where
+    afetadas = colunasAfetadasN [h] i
+    proxima = case h of
+        Teleporta _ n -> (last afetadas) + n
+        _ -> last afetadas + 1
+
+
+-- | Determina as colunas afetadas por uma instrução
+colunasAfetadas :: Instrucao -> Int -> ([Int], Int)
+colunasAfetadas (Anda _ _) i = ([i], i+1)
+colunasAfetadas (Sobe _ _ _) i = ([i], i+1)
+colunasAfetadas (Desce _ _ _) i = ([i], i+1)
+colunasAfetadas (Teleporta _ n) i = (enum i (i+n), (i+n))
+
+-- | Remove 'Repete's
+alisa :: Instrucoes -> Instrucoes
+alisa [] = []
+alisa ((Repete n ins):t) = take (n * (length ins)) (cycle ins) ++ alisa t
+alisa (h:t) = h:alisa t
+
+colunasAfetadasN :: Instrucoes -> Int -> [Int]
+colunasAfetadasN [] i = []
+colunasAfetadasN l i = aux (alisa l) i
+  where
+    aux [] i = []
+    aux (h:t) i = colunas ++ colunasAfetadasN t colunaFinal
+    (colunas, colunaFinal) = colunasAfetadas (head $ alisa l) i
+
+-- ([pistas], [colunas], Instrucoes)
+
+-- Enumera todos os numeros entre 2 inteiros
+enum :: Int -> Int -> [Int]
+enum a b
+    | a < b = [a..b]
+    | otherwise = [b..a]
+
+-- |Procura padrões verticais em diferentes pistas e comprime as 'Instrucoes' 
+comprimeRepeticoesVerticais :: Int        -- ^ O número da primeira 'Pista'  
+                            -> Instrucoes -- ^ As 'Instrucoes' que se pretendem comprimir
+                            -> Instrucoes -- ^ As 'Instrucoes' resultantes
+comprimeRepeticoesVerticais n l = concat (agrupaTodas n l)
+
+-- | Aplica agrupaColuna a instruções sem compressão
+agrupaTodas :: Int          -- ^ O número de pistas do mapa 
+            -> Instrucoes   -- ^ As 'Instrucoes' que se pretendem agrupar
+            -> [Instrucoes] -- ^ As 'Instrucoes' agrupadas 
+agrupaTodas n l = map agrupaColuna (instrucoesPorColuna n l)
+
+{-| Aplica compactaInstrucoes a 'Instrucoes' ordenadas por instrucoesIguais
+
+== Exemplos de utilização
+>>> agrupaColuna [Anda [0] Terra, Anda [1] Terra, Anda [2] Terra, Anda [3] Lama]
+[Anda [0,1,2] Terra,Anda [3] Lama]
+-}
+ 
+agrupaColuna :: Instrucoes -- ^ As 'Instrucoes' das mesmas colunas de diversas pistas vão ser compactadas 
+             -> Instrucoes -- ^ As 'Instrucoes' compactadas
+agrupaColuna l = map compactaInstrucoes (aux l [])
+  where
+    aux ::  Instrucoes-> [Instrucoes] -> [Instrucoes]
+    aux [] l  = l
+    aux (h:t) l  = aux t (insere h l)
+
+-- | Compacta as 'Instrucoes' iguais 
+compactaInstrucoes :: Instrucoes -- ^ As 'Instrucoes' a serem compactadas 
+                   -> Instrucao  -- ^ As 'Instrucoes' compactadas numa 'Instruca'
+compactaInstrucoes [x] = x
+compactaInstrucoes (h:t) = combina h (compactaInstrucoes t)
+
+{-| 
+Combina duas instruções iguais numa 'Instrucao'
+
+== Exemplos de utilização
+>>> combina (Anda [0] Boost) (Anda [2] Boost) 
+Anda [0,2] Boost
+
+-}
+combina :: Instrucao -- ^ A 'Instrucao' a combinar  
+        -> Instrucao -- ^ A 'Instrucao' a combinar
+        -> Instrucao -- ^ A 'Instrucao' resultante 
+combina (Anda a x) (Anda b _) = Anda (sort (a ++ b)) x
+combina (Sobe a x y) (Sobe b _ _) = Sobe (sort(a ++ b)) x y
+combina (Desce a x y) (Desce b _ _) = Desce (sort(a ++ b)) x y
+combina (Teleporta a x) (Teleporta b _) = Teleporta (sort(a ++ b)) x
+combina (Repete n ins) (Repete _ ins2) = Repete n (zipWith combina ins ins2)
+
+-- | Insere uma 'Instrucao' de forma ordena por instrucoesColuna 
+insere :: Instrucao    -- ^ A 'Instrucao' a inserir  
+       -> [Instrucoes] -- ^ A lista de 'Instrucoes' que se pretende que seja inserida
+       -> [Instrucoes] -- ^ A lista de 'Instrucoes' resultante
+insere i [] = [[i]] 
+insere a (b:t)
+    | instrucoesIguais a (head b) = (a:b):t
+    | otherwise = b:insere a t
+
+-- |Esta função dispõe as 'Instrucoes' por coluna
+instrucoesPorColuna :: Int          -- ^ O número de pistas 
+                    -> Instrucoes   -- ^ As 'Instrucoes' a serem alteradas 
+                    -> [Instrucoes] -- ^ As 'Instrucoes' alteradas
+instrucoesPorColuna n l = aux l 0
+  where
+    aux x i
+        | i > n - 1 = []
+        | otherwise = (instrucoesColuna n x i) : (aux x (i+1))
+     
+instrucoesColuna :: Int -> Instrucoes -> Int -> Instrucoes
+instrucoesColuna n l id = aux l id 
+  where
+    aux x i  
+        | i > (length x) -1 = []
+        | otherwise = (x !! i) : aux x (i+n)
+
+-- | Verifica se duas instruçoes são iguais          
+instrucoesIguais :: Instrucao -- ^ 'Instrucao' a verificar 
+                 -> Instrucao -- ^ 'Instrucao' a verificar
+                 -> Bool      -- ^ O resultado
+instrucoesIguais (Anda _ x) (Anda _ y) = x == y
+instrucoesIguais (Sobe _ x  h1) (Sobe _ y h2) = x==y && h1 == h2
+instrucoesIguais (Desce _ x h1) (Desce _ y h2) = x == y && h1 == h2
+instrucoesIguais (Teleporta _ x) (Teleporta _ y) = x == y
+instrucoesIguais (Repete a ins) (Repete b ins2) = a == b && all id (zipWith instrucoesIguais ins ins2)
+instrucoesIguais _ _ = False
+
+-- * Funções relativas à tranformação do 'Mapa' em 'Instrucoes' sem otimização
+
+-- | Esta função gera as instruções basicas do mapa, sem qualquer otimização
+mapaToInstrucoes :: Int        -- ^ O número da primeira pista 
+                 -> Mapa       -- ^ O 'Mapa' a converter em 'Instrucoes'
+                 -> Instrucoes -- ^ As 'Instrucoes' resultantes
+mapaToInstrucoes _ [] = []
+mapaToInstrucoes id (h:t) =  pistaToInstrucoes id h ++ mapaToInstrucoes (id+1) t
+        
+-- | Gera as 'Instrucoes' de uma 'Pista'
+pistaToInstrucoes :: Int        -- ^ O índice da pista    
+                  -> Pista      -- ^ A 'Pista' 
+                  -> Instrucoes -- ^ As 'Instrucoes' resultantes
+pistaToInstrucoes _ [] = []
+pistaToInstrucoes id (h:t) = pecaToInstrucao id h : pistaToInstrucoes id t       
+
+-- | Converte uma 'Peca' numa 'Instrucao' 
+pecaToInstrucao :: Int       -- ^ O índice da 'Pista'
+                -> Peca      -- ^ A 'Peca' a ser convertida
+                -> Instrucao -- ^ A 'Instrucao' correspondente
+pecaToInstrucao id (Recta piso h)  = Anda [id] piso
+pecaToInstrucao id (Rampa piso h1 h2) 
+    |h1 > h2 = Desce [id] piso dif
+    |otherwise = Sobe [id] piso dif 
+  where
+    dif = abs (h1 - h2)
+
+-- | Devolve o primeiro elemento e, se existir, o segundo num par.
+primeiraESegunda :: [a] -> (a, Maybe a)
+primeiraESegunda (a:[]) = (a, Nothing)
+primeiraESegunda (a:b:t) = (a, Just b)
+
+-- | Agrupa elementos de uma lista com base numa função de comparação
+groupBy2 :: (a -> a -> Bool) -> [a] -> [[a]]
+groupBy2 f [] = []
+groupBy2 f (h:t) = insertBy f h (groupBy2 f t)
+
+insertBy :: (a -> a -> Bool) -> a -> [[a]] -> [[a]]
+insertBy f x [] = [[x]]
+insertBy f x ((a:as):t)
+    | f x a = (x:a:as):t
+    | otherwise = (a:as):insertBy f x t
+
+-- comprimeDesfazados :: [Instrucoes] -> Instrucoes
+comprimeDesfazados ([]:_) = []
+comprimeDesfazados l = processa $ zip (ocorres 0) listaAgrupada
+    -- Procurar em todos os elementos se esse elemento aparece mais à frente noutras listas
+    -- Se aparecere não estiver na coluna atual, esperar até que apareça
+    -- Senão, avançar.
+  where
+    listaAgrupada = groupBy2 instrucoesIguais (head <$> remEmpty l)
+    ocorres i 
+        | i < length listaAgrupada = ocorre (head $ listaAgrupada !! i) (removeIndices (sort $ concatMap pistas (listaAgrupada !! i)) l) : (ocorres (i+1))
+        | otherwise = []
+    processa :: [((Maybe (Int, Instrucao)), Instrucoes)] -> Instrucoes
+    processa [] = []
+    processa ((Nothing, i):t) = (compactaInstrucoes i):comprimeDesfazados (mapIndices tailVazia (sort $ concatMap pistas i) l)
+    processa (h:t) = processa t -- Obviamente que isto está mal
+    -- Falta aqui andar com o que tem a distancia maior (???)
+
+-- | Igual a 'tail', mas quando a lista é vazia devolve outra lista vazia.
+tailVazia :: [a] -> [a]
+tailVazia [] = []
+tailVazia (h:t) = t
+
+ocorre :: Instrucao -> [Instrucoes] -> Maybe (Int, Instrucao)
+ocorre _ [] = Nothing
+ocorre i l = minimumBy compara (map (ocorreEmLista i) (map tailVazia l))
+  where
+    compara :: Maybe (Int, Instrucao) -> Maybe (Int, Instrucao) -> Ordering 
+    compara Nothing Nothing = EQ
+    compara Nothing _ = GT
+    compara _ Nothing = LT
+    compara (Just (n,_)) (Just (m,_)) = compare n m
+
+-- | Encontra o menor elemento de uma lista com base numa função
+minimumBy :: (a -> a -> Ordering) -> [a] -> a
+minimumBy f [x] = x
+minimumBy f (h:t) = case f h (minimumBy f t) of
+    LT -> h
+    _  -> minimumBy f t
+
+ocorreEmLista :: Instrucao -> Instrucoes -> Maybe (Int, Instrucao)
+ocorreEmLista i [] = Nothing
+ocorreEmLista i (h:t)
+    | instrucoesIguais h i = Just (0, h)
+    | otherwise = fmap (\(n,x) -> (n+1, x)) $ ocorreEmLista i t
+
+-- | Remove os elementos com o indice dado na lista
+-- Obs: A lista de indices tem de estar ordenada
+removeIndices :: [Int] -> [a] -> [a]
+removeIndices [] l = l
+removeIndices _ [] = []
+removeIndices (0:ns) (h:t) = removeIndices (map pred ns) t
+removeIndices (n:ns) (h:t) = h:removeIndices (map pred (n:ns)) t
+
+-- | Aplica a função f a apenas certos indíces
+mapIndices :: (a -> a) -> [Int] -> [a] -> [a]
+mapIndices f [] l = l
+mapIndices f i [] = []
+mapIndices f (0:is) (h:t) = f h : mapIndices f (map pred is) t
+mapIndices f is (h:t) = h : mapIndices f (map pred is) t
+
+-- | Devolve as pistas afetadas por uma instrução
+-- Obs: A lista de indices tem de estar ordenada
+pistas :: Instrucao -> [Int]
+pistas (Anda p _) = p
+pistas (Sobe p _ _) = p
+pistas (Desce p _ _) = p
+pistas (Teleporta p _ ) = p
+
+-- | Remove listas vazias
+remEmpty :: [[a]] -> [[a]]
+remEmpty [] = []
+remEmpty ([]:t) = remEmpty t
+remEmpty (h:t) = h : remEmpty t
+
+-- | Comprime uma lista de instruções utilizando a instrução 'Teleporta'
+comprimeTeleporta :: [Instrucoes] -- ^ As 'Instrucoes' para cada 'Pista'
+                  -> [Instrucoes]   -- ^ As 'Instrucoes' comprimidas
+comprimeTeleporta [] = []
+comprimeTeleporta l = removeUltimoTeleporta <$> (zipWith (:) instrucoesIniciais $ zipWith (:) insTeleporta instrucoesPorPista)
+  where
+    maisComum = map (head . (maximumBy length) . (groupBy2 instrucoesIguais)) l       -- A instrução mais comum de cada pista
+    instrucoesIniciais = map (\(i, n) -> Repete n [i]) (zip maisComum (length <$> l)) -- A lista dos 'Repete's para cada pista
+    divergencias = zipWith divergeEm maisComum l                                      -- A lista dos índices dos primeiros elementos divergentes de cada pista
+    teleportas = zipWith (-) divergencias (map length l)
+    insTeleporta = filter (\(Teleporta _ y) -> y /= 0) $ zipWith (\x y -> Teleporta [x] y)  [0..] teleportas
+    instrucoesPorPista = zipWith3 (\x y z -> compactaTeleportas (avancaPista x (drop z y))) maisComum l divergencias
+
+removeUltimoTeleporta :: Instrucoes -> Instrucoes
+removeUltimoTeleporta [] = []
+removeUltimoTeleporta (i@(Teleporta _ _):t) = case xs of
+    [] -> []
+    _ -> i:xs
+  where
+    xs = removeUltimoTeleporta t
+removeUltimoTeleporta (h:t) = h:removeUltimoTeleporta t
+  
+-- | Avança as 'Instrucoes' de uma pista utilizando a instrução 'Teleporta'
+avancaPista :: Instrucao -> Instrucoes -> Instrucoes
+avancaPista i [] = []
+avancaPista i (h:t) = h : avancaPista i t
+-- ! Isto não funciona - Tem de ter em conta a altura e repetir a instrução se a altura não for 0!
+    -- | h /= i = h : avancaPista i t
+    -- | otherwise = Teleporta (pistas h) 1 : avancaPista i t
+
+-- | Comprime sequências de 'Teleporta's para uma única instrução
+compactaTeleportas :: Instrucoes -> Instrucoes
+compactaTeleportas [] = []
+compactaTeleportas ((Teleporta p x):t) = case is of
+    ((Teleporta p y):ti) -> (Teleporta p (x+y)):ti
+    _ -> (Teleporta p x):is
+  where
+    is = compactaTeleportas t
+compactaTeleportas (h:t) = h:compactaTeleportas t
+
+-- | Encontra o índice da primeira instrução que não seja igual a uma dada instrução.
+divergeEm :: Instrucao -> Instrucoes -> Int
+divergeEm i [] = 0
+divergeEm i (h:t)
+    | i /= h = 0
+    | otherwise = 1 + (divergeEm i t)
+
+-- | Devolve o maior elemento baseado numa função f
+maximumBy :: Ord b => (a -> b) -> [a] -> a
+maximumBy f [x] = x
+maximumBy f (h:t)
+    | f h > f (maximumBy f t) = h
+    | otherwise = maximumBy f t
+
+-- | Devolve o menor elemento baseado numa função f
+minimumBy' :: Ord b => (a -> b) -> [a] -> a
+minimumBy' f [x] = x
+minimumBy' f (h:t)
+    | f h < f (minimumBy' f t) = h
+    | otherwise = minimumBy' f t

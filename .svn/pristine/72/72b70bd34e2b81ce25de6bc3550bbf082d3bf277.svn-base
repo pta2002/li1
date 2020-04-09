@@ -1,0 +1,44 @@
+-- | Este módulo define funções comuns da Tarefa 2 do trabalho prático.
+module Tarefa1_2019li1g181 where
+
+import LI11920
+import System.Random
+
+-- * Testes
+
+-- | Testes unitários da Tarefa 1.
+--
+-- Cada teste é um triplo (/número de 'Pista's/,/comprimento de cada 'Pista' do 'Mapa'/,/semente de aleatoriedades/).
+testesT1 :: [(Int,Int,Int)]
+testesT1 = []
+
+-- * Funções pré-definidas da Tarefa 1.
+
+-- Gera uma lista de números aleatórios
+geraAleatorios :: Int -> Int -> [Int]
+geraAleatorios n seed = take n (randomRs (0,9) (mkStdGen seed))
+
+-- * Funções principais da Tarefa 1.
+
+gera :: Int -> Int -> Int -> Mapa
+gera npistas comprimento semente = []
+
+-- Gera uma matrz de pares de números aleatórios
+-- Irá ser utilizada para gerar o mapa.
+agrupaCelulas :: Int -> Int -> Int -> [[(Int, Int)]]
+agrupaCelulas npistas comprimento semente = reparte npistas $ agrupa2 ns
+    where ns = geraAleatorios (comprimento * npistas * 2) semente
+
+-- Agrupa uma lista em pares.
+agrupa2 :: [a] -> [(a,a)]
+agrupa2 [] = []
+agrupa2 (a:b:t) = (a,b):agrupa2 t
+
+-- Divide uma lista em n partes
+reparte :: Int -> [a] -> [[a]]
+reparte _ [] = []
+reparte n l = reparteA n l objetivo
+    where
+        objetivo = div (length l) n -- O comprimento de cada sublista
+        reparteA _ [] _ = []
+        reparteA n l obj = (take obj l) : (reparteA n (drop obj l) obj)

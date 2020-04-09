@@ -1,0 +1,125 @@
+-- | Este módulo define funções comuns da Tarefa 2 do trabalho prático.
+module Tarefa2_2019li1g181 where
+
+import LI11920
+import Tarefa0_2019li1g181
+import Tarefa1_2019li1g181
+
+-- Objetos pré-definidos para testes
+jogadorInicial = Jogador 0 0 1 1 (Chao False)
+mapaInicial = gera 2 5 1
+
+-- * Testes
+
+-- | Testes unitários da Tarefa 2.
+--
+-- Cada teste é um triplo (/identificador do 'Jogador'/,/'Jogada' a efetuar/,/'Estado' anterior/).
+testesT2 :: [(Int,Jogada,Estado)]
+testesT2 =
+    [ (0, Movimenta E, Estado mapaInicial [jogadorInicial{estadoJogador=Ar 0 0 0}])
+    , (0, Movimenta D, Estado mapaInicial [jogadorInicial{estadoJogador=Ar 0 0 0}])
+    , (0, Movimenta E, Estado mapaInicial [jogadorInicial{estadoJogador=Ar 0 90 0}])
+    , (0, Movimenta D, Estado mapaInicial [jogadorInicial{estadoJogador=Ar 0 (-90) 0}])
+    , (0, Movimenta E, Estado mapaInicial [jogadorInicial])
+    ]
+
+-- * Funções principais da Tarefa 2.
+
+-- | Efetua uma jogada.
+jogada :: Int    -- ^ O identificador do 'Jogador' que efetua a jogada.
+       -> Jogada -- ^ A 'Jogada' a efetuar.
+       -> Estado -- ^ O 'Estado' anterior.
+       -> Estado -- ^ O 'Estado' resultante após o jogador efetuar a jogada.
+jogada idJogador acao estado = case acao of
+    Movimenta dir -> atualizaJogador idJogador (movimenta jogador mapa dir) estado
+    Acelera       -> undefined
+    Desacelera    -> undefined
+    Dispara       -> undefined
+  where
+    jogadores = jogadoresEstado estado  -- A lista de todos os jogadores
+    jogador = jogadores !! idJogador    -- O jogador que efetua a jogada
+    mapa = mapaEstado estado
+
+atualizaJogador :: Int -> Jogador -> Estado -> Estado
+atualizaJogador idJogador jogador estado = estado { jogadoresEstado = nJogadores }
+  where
+    jogadores = jogadoresEstado estado
+    nJogadores = atualizaIndiceLista idJogador jogador jogadores
+
+-- | Executa a jogada Movimenta num jogador
+movimenta :: Jogador -> Mapa -> Direcao -> Jogador
+movimenta jogador mapa dir
+    | dir == C || dir == B = mudaPista jogador mapa dir
+    | dir == D || dir == E = inclina jogador dir
+
+-- | Muda um jogador de pista
+mudaPista :: Jogador -> Mapa -> Direcao -> Jogador
+mudaPista jogador mapa dir = undefined
+
+-- | Inclina um jogador na direção especificada
+inclina :: Jogador -> Direcao -> Jogador
+inclina jogador dir = case estado of
+    Ar{} -> jogador { estadoJogador = estado {inclinacaoJogador = novaInc} }
+    estado -> jogador  -- Caso o jogador não esteja no ar, não fazemos nada 
+  where
+    estado = estadoJogador jogador
+    -- A diferença entre a nova inclinação e a anterior
+    diferenca
+        | dir == E = 15  -- TODO verificar isto
+        | dir == D = -15
+    inc = inclinacaoJogador estado
+    novaInc = max (-90) (min 90 $ inc + diferenca)
+
+  
+<<<<<<< .mine
+{-dispara :: Jogador -> Mapa -> (Jogador, Mapa)
+dispara jogador mapa 
+        |cola > 0 = (novoJog, colaMapa (npista dist mapa)) --Eu já simpifico isto quero só ver se dá
+        |otherwise = jogador mapa
+   where
+    Jogador { pistaJogador = npista, distanciaJogador = dist, velocidadeJogador = veloc, colaJogador = cola, estadoJogador = estadojogador } = jogador
+    novoJog = jogador{colaJogador = (cola -1)}
+-}
+||||||| .r34
+dispara :: Jogador -> Mapa -> (Jogador, Mapa)
+dispara jogador mapa = undefined 
+        |cola > 0 = ((pista x veloc  $ cola-1 estadojogador), colaMapa (ColaPista x pista)) --Eu já simpifico isto quero só ver se dá
+        |otherwise = jogador mapa
+   where
+   (pista x veloc cola estadojogador) = jogador
+=======
+dispara :: Jogador -> Mapa -> (Jogador, Mapa)
+dispara jogador mapa
+    | cola > 0 = (jogador {colaJogador = cola - 1}, colaMapa (colaPista pista x) mapa)  -- Eu já simpifico isto quero só ver se dá
+    | otherwise = (jogador, mapa)
+  where
+    (Jogador inPista x veloc cola estadojogador) = jogador
+    pista = mapa !! inPista
+
+>>>>>>> .r35
+colaPista :: Pista -> Double -> Pista
+colaPista pista dist = case pista !! n of 
+<<<<<<< .mine
+                                Recta _ h ->atualizaIndiceLista n (Recta Cola h) pista
+                                Rampa _ h1 h2 -> atualizaIndiceLista n (Rampa Cola h1 h2) pista
+     where
+      n = truncate (dist-1)
+||||||| .r34
+                                Recta _ h ->atualizaIndiceLista n (Recta Cola h) pista
+                                Rampa _ h1 h2 -> atualizaIndiceLista n (Rampa Cola h1 h2) pista
+     where
+      n = truncate (x-1)
+=======
+    Recta _ h ->atualizaIndiceLista n (Recta Cola h) pista
+    Rampa _ h1 h2 -> atualizaIndiceLista n (Rampa Cola h1 h2) pista
+  where
+    n = truncate (x-1)
+>>>>>>> .r35
+
+
+colaMapa :: Int -> Double -> Mapa -> Mapa
+colaMapa npista dist mapa = atualizaIndiceLista npista pista  mapa
+     where pista = colaPista (mapa!!npista) dist
+
+
+  

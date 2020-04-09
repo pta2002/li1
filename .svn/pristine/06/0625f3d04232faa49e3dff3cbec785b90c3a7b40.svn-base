@@ -1,0 +1,78 @@
+-- | Este módulo define funções comuns da Tarefa 6 do trabalho prático.
+module Tarefa6_2019li1g181 where
+
+import LI11920
+import Tarefa4_2019li1g181(calculaAtrito, checkMorto)
+import Tarefa2_2019li1g181 (jogada, inclinacaoPeca, encontraPeca)
+import Tarefa1_2019li1g181
+import Data.List (transpose,last,head,sortOn)
+
+-- * Funções principais da Tarefa 6.
+
+-- | Define um ro'bot' capaz de jogar autonomamente o jogo.
+bot :: Int          -- ^ O identificador do 'Jogador' associado ao ro'bot'.
+    -> Estado       -- ^ O 'Estado' para o qual o ro'bot' deve tomar uma decisão.
+    -> Maybe Jogada -- ^ Uma possível 'Jogada' a efetuar pelo ro'bot'.
+bot n e = case estadoRobot of
+        Chao True->  proxJogadaMorto ( caminhoMenosAtrito pistaRobot (atritoPecasRaio1 posRobot pistaRobot mapa) ) robot mapa
+        Morto{} -> Nothing
+        Ar{}-> proxJogadaMorto ( mudaInclinacao  mapa robot ) robot mapa
+        _ -> Just Acelera
+    where
+        jogadores =  jogadoresEstado e
+        mapa =  mapaEstado e
+        robot = jogadores !! n
+        velocRobot = velocidadeJogador robot
+        posRobot = truncate (distanciaJogador robot) 
+        pistaRobot = pistaJogador robot
+        estadoRobot = estadoJogador robot
+
+atritoPecasRaio1 :: Int            -- ^ A posição do ro'bot'.
+               -> Int            -- ^ A 'Pista' em que o ro'bot' se encontra.
+               -> Mapa           -- ^ O 'Mapa' a avaliar.
+               -> Maybe [Double] -- ^ A lista do atrito da próxima coluna de 'Peca's colineares.
+atritoPecasRaio1 pos pista m
+    | (pista == 0) = Just (b:[head bs])
+    | (pista + 1) == length m = Just (last a : [b]) 
+    | length (m!!0) > pos + 1 && length m > 3  = Just ( (last a) : b : [head bs]  )
+    | length (m!!0) == pos + 1 =  Nothing -- Caso seja a última 'Peca' ele devolve Nothing
+    | otherwise = Just transposta
+        where
+            transposta = calculaAtrito <$> (transpose m) !! (pos)
+            (a,b:bs) = splitAt pista transposta
+
+caminhoMenosAtrito :: Int                -- ^ A 'Pista' em que o ro'bot' se encontra
+                   -> Maybe [Double]     -- ^ A lista do atrito da próxima coluna de 'Pecas's colineares
+                   -> Maybe Jogada       -- ^ Uma possível 'Jogada' a efetuar pelo ro'bot' .
+caminhoMenosAtrito _ Nothing = Just Acelera -- Este caso é para quando é a última 'Peca' e única 'Jogada' a fazer é a 'Acelera'r.
+caminhoMenosAtrito pista (Just l) = case i of 
+                0 -> if (pista == 0) then Nothing else Just (Movimenta C) 
+                1 -> if (pista == 0 ) then Just (Movimenta B) else Nothing ------------Tenho que mudar
+                2 -> Just (Movimenta B)
+    where
+        w = zip [0,1,2] l
+        (i,atrito) = head (sortOn snd w)
+        
+mudaInclinacao :: Mapa          -- ^ O 'Mapa' a avaliar.
+               -> Jogador       -- ^ O ro'bot' a ser testado
+               -> Maybe Jogada  -- ^ Uma possível 'Jogada' 
+mudaInclinacao m robot
+    | robotInclinacao < inclinacao = Just (Movimenta E)
+    | robotInclinacao == inclinacao = Nothing
+    | otherwise = Just (Movimenta D) 
+    where
+        eRobot = estadoJogador robot 
+        robotInclinacao = inclinacaoJogador eRobot
+        inclinacao = inclinacaoPeca $ encontraPeca robot m 
+proxJogadaMorto :: Maybe Jogada -- ^ A 'Jogada' que se pretende testar.
+                -> Jogador      -- ^ O ro'bot' que vai ser testado
+                -> Mapa         -- ^ O 'Mapa' a ser testado
+                -> Maybe Jogada -- ^ A 'Jogada' avaliada
+proxJogadaMorto Nothing _ _  = Nothing
+proxJogadaMorto (Just j) robot m = if (checkMorto eRobot) then Nothing else (Just j)
+    where
+        e = jogada 0 j Estado{ mapaEstado = m, jogadoresEstado = [robot]}
+        [robotAtualizado] = jogadoresEstado e
+        eRobot = estadoJogador robotAtualizado
+        
+

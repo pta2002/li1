@@ -1,0 +1,34 @@
+module Interface.Estado where
+
+import Interface.Mapa
+import LI11920
+import Tarefa1_2019li1g181
+import Graphics.Gloss
+import Graphics.Gloss.Interface.IO.Game
+
+data EstadoJogo = EstadoMenu
+                | EstadoJogo EstadoM
+
+drawEstado :: EstadoJogo-> IO Picture
+drawEstado EstadoMenu = return $ circle 30
+drawEstado (EstadoJogo em) = return $ draw em
+
+updateEstado :: Float -> EstadoJogo -> IO EstadoJogo
+updateEstado t EstadoMenu = return EstadoMenu
+updateEstado t (EstadoJogo em) = return $ EstadoJogo $ update t em
+
+eventEstado :: Event -> EstadoJogo -> IO EstadoJogo
+eventEstado e (EstadoJogo em) = return $ EstadoJogo $ event e em
+eventEstado (EventKey _ _ _ _) EstadoMenu = do
+    estadoInicial <- mapa (gera 10 5 1) [Jogador 3 0 1 1 $ Chao True]
+    return $ EstadoJogo estadoInicial
+eventEstado _ EstadoMenu = return EstadoMenu
+
+main :: IO ()
+main = playIO (InWindow "ExciteBike" (800, 600) (0, 0))
+            (greyN 0.5)
+            60
+            EstadoMenu
+            drawEstado
+            eventEstado
+            updateEstado
